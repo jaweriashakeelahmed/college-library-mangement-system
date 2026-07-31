@@ -1,0 +1,10 @@
+B001
+C++ Programming
+Bjarne Stroustrup
+CS
+Available
+B002
+Data Structures
+Mark Allen Weiss
+IT
+Issued
