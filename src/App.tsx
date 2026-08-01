@@ -27,8 +27,8 @@ export default function App() {
   const [books, setBooks] = useState<Book[]>(INITIAL_BOOKS);
   const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
   const [trackingRecords, setTrackingRecords] = useState<IssueRecord[]>([
-    { studentId: '2k26/CS/12', studentName: 'Ali Khan', bookId: 'B004', bookName: 'Data Structures', issueDate: '2026-07-20', expectedReturnDate: '2026-08-04' },
-    { studentId: '2k25/IT/10', studentName: 'Sara Ahmed', bookId: 'B003', bookName: 'C++ Programming', issueDate: '2026-07-25', expectedReturnDate: '2026-08-09' },
+    { id: 'REC001', studentId: '2k26/CS/12', studentName: 'Ali Khan', bookId: 'B004', bookName: 'Data Structures', issueDate: '2026-07-20', expectedReturnDate: '2026-08-04', status: 'Issued' },
+    { id: 'REC002', studentId: '2k25/IT/10', studentName: 'Sara Ahmed', bookId: 'B003', bookName: 'C++ Programming', issueDate: '2026-07-25', expectedReturnDate: '2026-08-09', status: 'Issued' },
   ]);
 
   const handleIssueBook = (studentName: string, rollNo: string, bookId: string, bookName: string, customExpectedReturnDate?: string) => {
@@ -47,25 +47,38 @@ export default function App() {
     }
 
     const newRecord: IssueRecord = {
+      id: `REC${String(trackingRecords.length + 1).padStart(3, '0')}`,
       studentId: rollNo,
       studentName,
       bookId,
       bookName,
       issueDate,
-      expectedReturnDate
+      expectedReturnDate,
+      status: 'Issued'
     };
     
     setTrackingRecords(prev => [newRecord, ...prev]);
   };
 
+  const handleReturnBook = (recordId: string, returnDate: string, lateDays: number, fine: number) => {
+    setTrackingRecords(prev => prev.map(r => {
+      if (r.id === recordId) {
+        // Update book status
+        setBooks(booksPrev => booksPrev.map(b => b.id === r.bookId ? { ...b, status: 'Available' } : b));
+        return { ...r, status: 'Returned', returnDate, lateDays, fine };
+      }
+      return r;
+    }));
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'Home': return <Dashboard />;
-      case 'Portal': return <StudentPortal books={books} onIssueBook={handleIssueBook} />;
+      case 'Portal': return <StudentPortal books={books} onIssueBook={handleIssueBook} trackingRecords={trackingRecords} />;
       case 'Books': return <Books books={books} setBooks={setBooks} />;
-      case 'Students': return <Students students={students} setStudents={setStudents} />;
-      case 'Issue': return <IssueBook books={books} onIssueBook={handleIssueBook} />;
-      case 'Return': return <ReturnBook />;
+      case 'Students': return <Students students={students} setStudents={setStudents} trackingRecords={trackingRecords} />;
+      case 'Issue': return <IssueBook books={books} onIssueBook={handleIssueBook} trackingRecords={trackingRecords} />;
+      case 'Return': return <ReturnBook trackingRecords={trackingRecords} onReturnBook={handleReturnBook} />;
       case 'Tracking': return <IssueHistory records={trackingRecords} />;
       case 'About': return <About />;
       default: return <Dashboard />;

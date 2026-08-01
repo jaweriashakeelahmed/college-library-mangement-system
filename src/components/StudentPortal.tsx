@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { BookOpen, UserPlus, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Book } from '../types';
+import { Book, IssueRecord } from '../types';
 
 interface StudentPortalProps {
   books: Book[];
+  trackingRecords: IssueRecord[];
   onIssueBook: (studentName: string, rollNo: string, bookId: string, bookName: string) => void;
 }
 
-export function StudentPortal({ books, onIssueBook }: StudentPortalProps) {
+export function StudentPortal({ books, trackingRecords, onIssueBook }: StudentPortalProps) {
   const [name, setName] = useState('');
   const [studentClass, setStudentClass] = useState('');
   const [rollNo, setRollNo] = useState('');
@@ -34,11 +35,18 @@ export function StudentPortal({ books, onIssueBook }: StudentPortalProps) {
       return;
     }
 
+    // Check limit
+    const currentlyIssuedCount = trackingRecords.filter(r => r.studentId === rollNo && r.status === 'Issued').length;
+    if (currentlyIssuedCount >= 3) {
+      showToast('Maximum borrowing limit reached (3 books). Please return a book before borrowing another.', 'error');
+      return;
+    }
+
     const book = books.find(b => b.id === selectedBook);
     if (!book) return;
 
     if (book.status !== 'Available') {
-      showToast('Book is not available or already issued to someone else.', 'error');
+      showToast('This book is currently issued to another student and is not available.', 'error');
     } else {
       showToast('Your book is registered and issued successfully! Check Tracking Records.', 'success');
       onIssueBook(name, rollNo, book.id, book.name);

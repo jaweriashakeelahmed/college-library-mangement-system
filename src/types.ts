@@ -15,12 +15,17 @@ export interface Student {
 }
 
 export interface IssueRecord {
+  id: string;
   studentId: string;
   studentName: string;
   bookId: string;
   bookName: string;
   issueDate: string;
   expectedReturnDate: string;
+  returnDate?: string;
+  lateDays?: number;
+  fine?: number;
+  status: 'Issued' | 'Returned' | 'Overdue';
 }
 
 export interface ReturnRecord {

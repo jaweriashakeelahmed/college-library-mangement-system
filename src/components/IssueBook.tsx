@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { BookUp, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Book } from '../types';
+import { Book, IssueRecord } from '../types';
 
 interface IssueBookProps {
   books: Book[];
+  trackingRecords: IssueRecord[];
   onIssueBook: (studentName: string, rollNo: string, bookId: string, bookName: string, customExpectedReturnDate?: string) => void;
 }
 
-export function IssueBook({ books, onIssueBook }: IssueBookProps) {
+export function IssueBook({ books, trackingRecords, onIssueBook }: IssueBookProps) {
   const [studentId, setStudentId] = useState('');
   const [bookId, setBookId] = useState('');
   const [expectedReturnDate, setExpectedReturnDate] = useState(() => {
@@ -31,6 +32,13 @@ export function IssueBook({ books, onIssueBook }: IssueBookProps) {
       return;
     }
 
+    // Check limit
+    const currentlyIssuedCount = trackingRecords.filter(r => r.studentId === studentId && r.status === 'Issued').length;
+    if (currentlyIssuedCount >= 3) {
+      showToast('Maximum borrowing limit reached (3 books). Please return a book before borrowing another.', 'error');
+      return;
+    }
+
     const book = books.find(b => b.id.toLowerCase() === bookId.toLowerCase());
     if (!book) {
       showToast('Book ID not found in the library.', 'error');
@@ -38,7 +46,7 @@ export function IssueBook({ books, onIssueBook }: IssueBookProps) {
     }
 
     if (book.status !== 'Available') {
-      showToast('This book is already issued and not available.', 'error');
+      showToast('This book is currently issued to another student and is not available.', 'error');
       return;
     }
 

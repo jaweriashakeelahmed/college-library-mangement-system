@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Search, Plus, Trash2, Edit, X } from 'lucide-react';
-import { Student } from '../types';
+import { Search, Plus, Trash2, Edit, X, BookOpen } from 'lucide-react';
+import { Student, IssueRecord } from '../types';
 
 interface StudentsProps {
   students: Student[];
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+  trackingRecords: IssueRecord[];
 }
 
-export function Students({ students, setStudents }: StudentsProps) {
+export function Students({ students, setStudents, trackingRecords }: StudentsProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newStudentId, setNewStudentId] = useState('');
@@ -20,6 +21,10 @@ export function Students({ students, setStudents }: StudentsProps) {
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     s.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const getIssuedBooksCount = (studentId: string) => {
+    return trackingRecords.filter(r => r.studentId === studentId && r.status === 'Issued').length;
+  };
 
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +162,7 @@ export function Students({ students, setStudents }: StudentsProps) {
                 <th className="px-6 py-4">Department</th>
                 <th className="px-6 py-4">Semester</th>
                 <th className="px-6 py-4">Phone Number</th>
+                <th className="px-6 py-4">Issued Books</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
@@ -167,11 +173,23 @@ export function Students({ students, setStudents }: StudentsProps) {
                   <td className="px-6 py-4 text-slate-500">{student.department}</td>
                   <td className="px-6 py-4 text-slate-500">{student.semester}</td>
                   <td className="px-6 py-4 text-slate-500">{student.phone}</td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${
+                      getIssuedBooksCount(student.id) >= 3 
+                        ? 'bg-rose-50 text-rose-700 border border-rose-200/60'
+                        : getIssuedBooksCount(student.id) > 0
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200/60'
+                          : 'bg-slate-50 text-slate-600 border border-slate-200/60'
+                    }`}>
+                      <BookOpen className="w-3.5 h-3.5" />
+                      {getIssuedBooksCount(student.id)} / 3
+                    </span>
+                  </td>
                 </tr>
               ))}
               {filteredStudents.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                     No students found matching your search.
                   </td>
                 </tr>
