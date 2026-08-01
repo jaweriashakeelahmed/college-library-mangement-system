@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, 
   Users, 
@@ -24,12 +24,34 @@ export type TabType = 'Home' | 'Portal' | 'Books' | 'Students' | 'Issue' | 'Retu
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('Home');
-  const [books, setBooks] = useState<Book[]>(INITIAL_BOOKS);
-  const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
-  const [trackingRecords, setTrackingRecords] = useState<IssueRecord[]>([
-    { id: 'REC001', studentId: '2k26/CS/12', studentName: 'Ali Khan', bookId: 'B004', bookName: 'Data Structures', issueDate: '2026-07-20', expectedReturnDate: '2026-08-04', status: 'Issued' },
-    { id: 'REC002', studentId: '2k25/IT/10', studentName: 'Sara Ahmed', bookId: 'B003', bookName: 'C++ Programming', issueDate: '2026-07-25', expectedReturnDate: '2026-08-09', status: 'Issued' },
-  ]);
+  const [books, setBooks] = useState<Book[]>(() => {
+    const saved = localStorage.getItem('lms_books');
+    return saved ? JSON.parse(saved) : INITIAL_BOOKS;
+  });
+  const [students, setStudents] = useState<Student[]>(() => {
+    const saved = localStorage.getItem('lms_students');
+    return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+  });
+  const [trackingRecords, setTrackingRecords] = useState<IssueRecord[]>(() => {
+    const saved = localStorage.getItem('lms_tracking');
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: 'REC001', studentId: '2k26/CS/12', studentName: 'Ali Khan', bookId: 'B004', bookName: 'Data Structures', issueDate: '2026-07-20', expectedReturnDate: '2026-08-04', status: 'Issued' },
+      { id: 'REC002', studentId: '2k25/IT/10', studentName: 'Sara Ahmed', bookId: 'B003', bookName: 'C++ Programming', issueDate: '2026-07-25', expectedReturnDate: '2026-08-09', status: 'Issued' },
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('lms_books', JSON.stringify(books));
+  }, [books]);
+
+  useEffect(() => {
+    localStorage.setItem('lms_students', JSON.stringify(students));
+  }, [students]);
+
+  useEffect(() => {
+    localStorage.setItem('lms_tracking', JSON.stringify(trackingRecords));
+  }, [trackingRecords]);
 
   const handleIssueBook = (studentName: string, rollNo: string, bookId: string, bookName: string, customExpectedReturnDate?: string) => {
     // Update book status
@@ -71,17 +93,24 @@ export default function App() {
     }));
   };
 
+  const handleRegisterStudent = (student: Student) => {
+    // Only add if ID doesn't exist
+    if (!students.find(s => s.id === student.id)) {
+      setStudents(prev => [student, ...prev]);
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
-      case 'Home': return <Dashboard />;
-      case 'Portal': return <StudentPortal books={books} onIssueBook={handleIssueBook} trackingRecords={trackingRecords} />;
+      case 'Home': return <Dashboard books={books} students={students} trackingRecords={trackingRecords} />;
+      case 'Portal': return <StudentPortal books={books} onIssueBook={handleIssueBook} trackingRecords={trackingRecords} onRegisterStudent={handleRegisterStudent} />;
       case 'Books': return <Books books={books} setBooks={setBooks} />;
       case 'Students': return <Students students={students} setStudents={setStudents} trackingRecords={trackingRecords} />;
-      case 'Issue': return <IssueBook books={books} onIssueBook={handleIssueBook} trackingRecords={trackingRecords} />;
+      case 'Issue': return <IssueBook books={books} students={students} onIssueBook={handleIssueBook} trackingRecords={trackingRecords} />;
       case 'Return': return <ReturnBook trackingRecords={trackingRecords} onReturnBook={handleReturnBook} />;
       case 'Tracking': return <IssueHistory records={trackingRecords} />;
       case 'About': return <About />;
-      default: return <Dashboard />;
+      default: return <Dashboard books={books} students={students} trackingRecords={trackingRecords} />;
     }
   };
 
@@ -101,7 +130,9 @@ export default function App() {
       {/* Top Bar */}
       <header className="bg-white text-slate-800 py-4 px-6 border-b border-slate-200 flex justify-between items-center z-10 relative">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 text-xl border border-blue-100/50">🏛</div>
+          <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100/50">
+            <GraduationCap className="w-6 h-6 stroke-[1.5]" />
+          </div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">College LMS</h1>
         </div>
         <h2 className="text-sm font-medium text-slate-500 hidden sm:block">Welcome to College Library</h2>

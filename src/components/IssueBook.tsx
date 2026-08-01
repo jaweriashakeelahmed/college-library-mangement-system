@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { BookUp, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Book, IssueRecord } from '../types';
+import { Book, IssueRecord, Student } from '../types';
 
 interface IssueBookProps {
   books: Book[];
+  students: Student[];
   trackingRecords: IssueRecord[];
   onIssueBook: (studentName: string, rollNo: string, bookId: string, bookName: string, customExpectedReturnDate?: string) => void;
 }
 
-export function IssueBook({ books, trackingRecords, onIssueBook }: IssueBookProps) {
+export function IssueBook({ books, students, trackingRecords, onIssueBook }: IssueBookProps) {
   const [studentId, setStudentId] = useState('');
   const [bookId, setBookId] = useState('');
   const [expectedReturnDate, setExpectedReturnDate] = useState(() => {
@@ -32,8 +33,14 @@ export function IssueBook({ books, trackingRecords, onIssueBook }: IssueBookProp
       return;
     }
 
+    const studentObj = students.find(s => s.id.toLowerCase() === studentId.toLowerCase());
+    if (!studentObj) {
+      showToast('Student is not registered.', 'error');
+      return;
+    }
+
     // Check limit
-    const currentlyIssuedCount = trackingRecords.filter(r => r.studentId === studentId && r.status === 'Issued').length;
+    const currentlyIssuedCount = trackingRecords.filter(r => r.studentId.toLowerCase() === studentId.toLowerCase() && r.status === 'Issued').length;
     if (currentlyIssuedCount >= 3) {
       showToast('Maximum borrowing limit reached (3 books). Please return a book before borrowing another.', 'error');
       return;
@@ -52,7 +59,7 @@ export function IssueBook({ books, trackingRecords, onIssueBook }: IssueBookProp
 
     // Success
     showToast('Book is available and allotted successfully!', 'success');
-    onIssueBook('Student ' + studentId, studentId, book.id, book.name, expectedReturnDate);
+    onIssueBook(studentObj.name, studentObj.id, book.id, book.name, expectedReturnDate);
     
     // Clear form
     setStudentId('');

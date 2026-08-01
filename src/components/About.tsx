@@ -1,11 +1,11 @@
-import { Code2, Github, Terminal, Coffee } from 'lucide-react';
+import { Code2, Github, Terminal, Coffee, GraduationCap } from 'lucide-react';
 
 export function About() {
   return (
     <div className="max-w-3xl mx-auto w-full space-y-10">
       <div className="text-center space-y-5">
         <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-sm border border-blue-100/50">
-          <span className="text-5xl">🏛</span>
+          <GraduationCap className="w-12 h-12 stroke-[1.5]" />
         </div>
         <div>
           <h2 className="text-3xl font-bold text-slate-900 tracking-tight">College Library Management System</h2>
@@ -40,7 +40,7 @@ export function About() {
               </div>
               <div>
                 <p className="font-bold text-slate-900">Web Frontend</p>
-                <p className="text-sm text-slate-500 font-medium mt-0.5">HTML5, CSS3, React</p>
+                <p className="text-sm text-slate-500 font-medium mt-0.5">HTML5, CSS3, Bootstrap</p>
               </div>
             </div>
             

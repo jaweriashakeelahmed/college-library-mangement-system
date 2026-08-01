@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { BookOpen, UserPlus, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Book, IssueRecord } from '../types';
+import { Book, IssueRecord, Student } from '../types';
 
 interface StudentPortalProps {
   books: Book[];
   trackingRecords: IssueRecord[];
   onIssueBook: (studentName: string, rollNo: string, bookId: string, bookName: string) => void;
+  onRegisterStudent: (student: Student) => void;
 }
 
-export function StudentPortal({ books, trackingRecords, onIssueBook }: StudentPortalProps) {
+export function StudentPortal({ books, trackingRecords, onIssueBook, onRegisterStudent }: StudentPortalProps) {
   const [name, setName] = useState('');
   const [studentClass, setStudentClass] = useState('');
   const [rollNo, setRollNo] = useState('');
+  const [phone, setPhone] = useState('');
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [bookSearchQuery, setBookSearchQuery] = useState('');
   
@@ -26,8 +28,8 @@ export function StudentPortal({ books, trackingRecords, onIssueBook }: StudentPo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !studentClass || !rollNo) {
-      showToast('Please fill all registration fields.', 'error');
+    if (!name || !studentClass || !rollNo || !phone) {
+      showToast('Please fill all registration fields including phone number.', 'error');
       return;
     }
     if (!selectedBook) {
@@ -48,13 +50,23 @@ export function StudentPortal({ books, trackingRecords, onIssueBook }: StudentPo
     if (book.status !== 'Available') {
       showToast('This book is currently issued to another student and is not available.', 'error');
     } else {
-      showToast('Your book is registered and issued successfully! Check Tracking Records.', 'success');
+      showToast('Your book is available and registration successful! Check Tracking Records.', 'success');
+      
+      onRegisterStudent({
+        id: rollNo,
+        name: name,
+        department: studentClass,
+        semester: 1, // Defaulting to 1 since we just take class string
+        phone: phone
+      });
+
       onIssueBook(name, rollNo, book.id, book.name);
       
       // Clear form after successful issue
       setName('');
       setStudentClass('');
       setRollNo('');
+      setPhone('');
       setSelectedBook(null);
     }
   };
@@ -88,7 +100,7 @@ export function StudentPortal({ books, trackingRecords, onIssueBook }: StudentPo
             <h3 className="text-lg font-bold text-slate-900">1. Student Registration</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700 block">Full Name</label>
               <input 
@@ -121,6 +133,17 @@ export function StudentPortal({ books, trackingRecords, onIssueBook }: StudentPo
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all placeholder-slate-400"
               />
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 block">Phone Number</label>
+              <input 
+                type="text" 
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="e.g. 03001234567"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all placeholder-slate-400"
+              />
+            </div>
           </div>
         </div>
 
@@ -150,9 +173,7 @@ export function StudentPortal({ books, trackingRecords, onIssueBook }: StudentPo
                 className={`flex items-start gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
                   selectedBook === book.id 
                     ? 'border-blue-600 bg-blue-50/30 shadow-sm' 
-                    : book.status !== 'Available'
-                      ? 'border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed'
-                      : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50/50'
+                    : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50/50'
                 }`}
               >
                 <div className="flex items-center h-5 mt-1">
@@ -161,9 +182,8 @@ export function StudentPortal({ books, trackingRecords, onIssueBook }: StudentPo
                     name="bookSelection" 
                     value={book.id}
                     checked={selectedBook === book.id}
-                    onChange={() => book.status === 'Available' && setSelectedBook(book.id)}
-                    disabled={book.status !== 'Available'}
-                    className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 disabled:cursor-not-allowed"
+                    onChange={() => setSelectedBook(book.id)}
+                    className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
                   />
                 </div>
                 <div className="flex-1">
@@ -172,15 +192,6 @@ export function StudentPortal({ books, trackingRecords, onIssueBook }: StudentPo
                       <p className="font-semibold text-slate-900 leading-tight">{book.name}</p>
                       <p className="text-sm text-slate-500 mt-0.5">{book.author}</p>
                     </div>
-                    {book.status === 'Available' ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700">
-                        Available
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-100 text-rose-700">
-                        Issued
-                      </span>
-                    )}
                   </div>
                 </div>
               </label>
