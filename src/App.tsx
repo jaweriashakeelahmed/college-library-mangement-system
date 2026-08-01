@@ -60,12 +60,12 @@ export default function App() {
     setTrackingRecords(prev => [newRecord, ...prev]);
   };
 
-  const handleReturnBook = (recordId: string, returnDate: string, lateDays: number, fine: number) => {
+  const handleReturnBook = (recordId: string, returnDate: string, lateDays: number, fine: number, returnStatus: 'Early' | 'On Time' | 'Late') => {
     setTrackingRecords(prev => prev.map(r => {
       if (r.id === recordId) {
         // Update book status
         setBooks(booksPrev => booksPrev.map(b => b.id === r.bookId ? { ...b, status: 'Available' } : b));
-        return { ...r, status: 'Returned', returnDate, lateDays, fine };
+        return { ...r, status: 'Returned', returnDate, lateDays, fine, returnStatus };
       }
       return r;
     }));

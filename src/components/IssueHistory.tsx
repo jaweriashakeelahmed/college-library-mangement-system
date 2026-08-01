@@ -116,8 +116,12 @@ export function IssueHistory({ records }: IssueHistoryProps) {
                       </span>
                     )}
                     {record.status === 'Returned' && (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                        Returned
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${
+                        record.returnStatus === 'Early' ? 'bg-blue-50 text-blue-700 border border-blue-200/60' :
+                        record.returnStatus === 'On Time' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' :
+                        'bg-red-50 text-red-700 border border-red-200/60'
+                      }`}>
+                        Returned {record.returnStatus ? `(${record.returnStatus})` : ''}
                       </span>
                     )}
                     {record.status === 'Overdue' && (

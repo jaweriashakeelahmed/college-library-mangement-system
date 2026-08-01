@@ -26,6 +26,7 @@ export interface IssueRecord {
   lateDays?: number;
   fine?: number;
   status: 'Issued' | 'Returned' | 'Overdue';
+  returnStatus?: 'Early' | 'On Time' | 'Late';
 }
 
 export interface ReturnRecord {

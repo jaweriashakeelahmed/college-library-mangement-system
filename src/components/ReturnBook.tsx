@@ -4,7 +4,7 @@ import { IssueRecord } from '../types';
 
 interface ReturnBookProps {
   trackingRecords: IssueRecord[];
-  onReturnBook: (recordId: string, returnDate: string, lateDays: number, fine: number) => void;
+  onReturnBook: (recordId: string, returnDate: string, lateDays: number, fine: number, returnStatus: 'Early' | 'On Time' | 'Late') => void;
 }
 
 export function ReturnBook({ trackingRecords, onReturnBook }: ReturnBookProps) {
@@ -46,18 +46,10 @@ export function ReturnBook({ trackingRecords, onReturnBook }: ReturnBookProps) {
     
     if (diffDays > 0) {
       setLateDays(diffDays);
-      setFine(diffDays * 10);
+      setFine(diffDays * 50);
     } else {
       setLateDays(0);
       setFine(0);
-    }
-  };
-
-  const handleCalculateFine = () => {
-    if (!foundRecord) {
-      handleSearch();
-    } else {
-      calculateFineLogic(foundRecord.expectedReturnDate, returnDate);
     }
   };
 
@@ -67,9 +59,18 @@ export function ReturnBook({ trackingRecords, onReturnBook }: ReturnBookProps) {
       return;
     }
 
-    onReturnBook(foundRecord.id, returnDate, lateDays, fine || 0);
+    const expected = new Date(foundRecord.expectedReturnDate);
+    const actual = new Date(returnDate);
+    const diffTime = actual.getTime() - expected.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let returnStatus: 'Early' | 'On Time' | 'Late' = 'On Time';
+    if (diffDays > 0) returnStatus = 'Late';
+    else if (diffDays < 0) returnStatus = 'Early';
+
+    onReturnBook(foundRecord.id, returnDate, lateDays, fine || 0, returnStatus);
     setMessage({ 
-      text: `Book Returned Successfully\nLate Days: ${lateDays}\nFine: Rs.${fine || 0}`, 
+      text: `Book Returned Successfully\nStatus: ${returnStatus}\nLate Days: ${lateDays}\nFine: Rs.${fine || 0}`, 
       type: 'success' 
     });
     
@@ -155,13 +156,6 @@ export function ReturnBook({ trackingRecords, onReturnBook }: ReturnBookProps) {
                   Rs. {fine !== null ? fine : '0'}
                 </p>
               </div>
-              <button 
-                type="button" 
-                onClick={handleCalculateFine}
-                className="px-5 py-2.5 text-sm font-medium text-blue-700 bg-white border border-blue-200/60 hover:bg-blue-50 rounded-xl transition-all shadow-sm active:scale-95"
-              >
-                Calculate Fine
-              </button>
             </div>
           </div>
 
