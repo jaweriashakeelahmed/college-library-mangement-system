@@ -46,7 +46,7 @@ export function ReturnBook({ trackingRecords, onReturnBook }: ReturnBookProps) {
     
     if (diffDays > 0) {
       setLateDays(diffDays);
-      setFine(diffDays * 50);
+      setFine(diffDays * 10);
     } else {
       setLateDays(0);
       setFine(0);

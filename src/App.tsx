@@ -7,7 +7,8 @@ import {
   History, 
   Info,
   LayoutDashboard,
-  GraduationCap
+  GraduationCap,
+  LogOut
 } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { Books } from './components/Books';
@@ -16,28 +17,38 @@ import { IssueBook } from './components/IssueBook';
 import { ReturnBook } from './components/ReturnBook';
 import { IssueHistory } from './components/IssueHistory';
 import { About } from './components/About';
-import { StudentPortal } from './components/StudentPortal';
 import { INITIAL_BOOKS, INITIAL_STUDENTS } from './data';
-import { IssueRecord, Book, Student } from './types';
+import { IssueRecord, Book, Student, Staff, CurrentUser } from './types';
+import { Auth } from './components/Auth';
+import { StudentDashboard } from './components/StudentDashboard';
 
-export type TabType = 'Home' | 'Portal' | 'Books' | 'Students' | 'Issue' | 'Return' | 'Tracking' | 'About';
+export type TabType = 'Home' | 'Books' | 'Students' | 'Issue' | 'Return' | 'Tracking' | 'About';
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() => {
+    const saved = localStorage.getItem('lms_current_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
   const [activeTab, setActiveTab] = useState<TabType>('Home');
   const [books, setBooks] = useState<Book[]>(() => {
     const saved = localStorage.getItem('lms_books');
     return saved ? JSON.parse(saved) : INITIAL_BOOKS;
   });
   const [students, setStudents] = useState<Student[]>(() => {
-    const saved = localStorage.getItem('lms_students');
+    const saved = localStorage.getItem('students_accounts');
     return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+  });
+  const [staffs, setStaffs] = useState<Staff[]>(() => {
+    const saved = localStorage.getItem('staff_accounts');
+    return saved ? JSON.parse(saved) : [];
   });
   const [trackingRecords, setTrackingRecords] = useState<IssueRecord[]>(() => {
     const saved = localStorage.getItem('lms_tracking');
     if (saved) return JSON.parse(saved);
     return [
-      { id: 'REC001', studentId: '2k26/CS/12', studentName: 'Ali Khan', bookId: 'B004', bookName: 'Data Structures', issueDate: '2026-07-20', expectedReturnDate: '2026-08-04', status: 'Issued' },
-      { id: 'REC002', studentId: '2k25/IT/10', studentName: 'Sara Ahmed', bookId: 'B003', bookName: 'C++ Programming', issueDate: '2026-07-25', expectedReturnDate: '2026-08-09', status: 'Issued' },
+      { id: 'REC001', studentId: '2k26/CS/12', studentName: 'Ayesha Malik', bookId: 'B004', bookName: 'Data Structures', issueDate: '2026-07-20', expectedReturnDate: '2026-08-04', status: 'Issued' },
+      { id: 'REC002', studentId: '2k25/IT/10', studentName: 'Zainab Tariq', bookId: 'B003', bookName: 'C++ Programming', issueDate: '2026-07-25', expectedReturnDate: '2026-08-09', status: 'Issued' },
     ];
   });
 
@@ -46,12 +57,24 @@ export default function App() {
   }, [books]);
 
   useEffect(() => {
-    localStorage.setItem('lms_students', JSON.stringify(students));
+    localStorage.setItem('students_accounts', JSON.stringify(students));
   }, [students]);
+
+  useEffect(() => {
+    localStorage.setItem('staff_accounts', JSON.stringify(staffs));
+  }, [staffs]);
 
   useEffect(() => {
     localStorage.setItem('lms_tracking', JSON.stringify(trackingRecords));
   }, [trackingRecords]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('lms_current_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('lms_current_user');
+    }
+  }, [currentUser]);
 
   const handleIssueBook = (studentName: string, rollNo: string, bookId: string, bookName: string, customExpectedReturnDate?: string) => {
     // Update book status
@@ -94,16 +117,52 @@ export default function App() {
   };
 
   const handleRegisterStudent = (student: Student) => {
-    // Only add if ID doesn't exist
-    if (!students.find(s => s.id === student.id)) {
+    if (!students.find(s => s.id.toLowerCase() === student.id.toLowerCase())) {
       setStudents(prev => [student, ...prev]);
     }
   };
 
+  const handleRegisterStaff = (staff: Staff) => {
+    if (!staffs.find(s => s.id.toLowerCase() === staff.id.toLowerCase())) {
+      setStaffs(prev => [staff, ...prev]);
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+  };
+
+  if (!currentUser) {
+    return (
+      <Auth 
+        onLogin={setCurrentUser} 
+        students={students} 
+        staffs={staffs} 
+        onRegisterStudent={handleRegisterStudent}
+        onRegisterStaff={handleRegisterStaff}
+      />
+    );
+  }
+
+  if (currentUser.role === 'student') {
+    const studentData = students.find(s => s.id.toLowerCase() === currentUser.id.toLowerCase());
+    if (!studentData) {
+      return <div className="p-8">Error loading student data. <button onClick={handleLogout}>Logout</button></div>;
+    }
+    return (
+      <StudentDashboard 
+        student={studentData} 
+        books={books} 
+        trackingRecords={trackingRecords} 
+        onLogout={handleLogout} 
+      />
+    );
+  }
+
+  // Staff Portal
   const renderContent = () => {
     switch (activeTab) {
       case 'Home': return <Dashboard books={books} students={students} trackingRecords={trackingRecords} />;
-      case 'Portal': return <StudentPortal books={books} onIssueBook={handleIssueBook} trackingRecords={trackingRecords} onRegisterStudent={handleRegisterStudent} />;
       case 'Books': return <Books books={books} setBooks={setBooks} />;
       case 'Students': return <Students students={students} setStudents={setStudents} trackingRecords={trackingRecords} />;
       case 'Issue': return <IssueBook books={books} students={students} onIssueBook={handleIssueBook} trackingRecords={trackingRecords} />;
@@ -116,7 +175,6 @@ export default function App() {
 
   const navItems = [
     { id: 'Home', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'Portal', label: 'Student Portal', icon: GraduationCap },
     { id: 'Books', label: 'Books', icon: BookOpen },
     { id: 'Students', label: 'Students', icon: Users },
     { id: 'Issue', label: 'Issue Book', icon: BookUp },
@@ -133,15 +191,16 @@ export default function App() {
           <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100/50">
             <GraduationCap className="w-6 h-6 stroke-[1.5]" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">College LMS</h1>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Staff Portal</h1>
         </div>
-        <h2 className="text-sm font-medium text-slate-500 hidden sm:block">Welcome to College Library</h2>
-        <div 
-          className="w-9 h-9 bg-slate-50 rounded-full flex items-center justify-center border border-slate-200 text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors"
-          title="Jaweria Shakeel"
+        <h2 className="text-sm font-medium text-slate-500 hidden sm:block">Welcome, {currentUser.name}</h2>
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors"
         >
-          <span className="text-sm font-bold">JS</span>
-        </div>
+          <LogOut className="w-4 h-4" />
+          <span className="text-sm font-semibold">Sign Out</span>
+        </button>
       </header>
 
       <div className="flex flex-1 overflow-hidden relative">
@@ -212,4 +271,3 @@ export default function App() {
     </div>
   );
 }
-

@@ -12,6 +12,20 @@ export interface Student {
   department: string;
   semester: number;
   phone: string;
+  password?: string; // added for auth
+}
+
+export interface Staff {
+  id: string; // username
+  name: string;
+  email: string;
+  password?: string;
+}
+
+export interface CurrentUser {
+  role: 'student' | 'staff';
+  id: string;
+  name: string;
 }
 
 export interface IssueRecord {
