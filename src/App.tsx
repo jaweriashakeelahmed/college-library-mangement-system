@@ -155,6 +155,7 @@ export default function App() {
         books={books} 
         trackingRecords={trackingRecords} 
         onLogout={handleLogout} 
+        onIssueBook={handleIssueBook}
       />
     );
   }

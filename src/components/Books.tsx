@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Trash2, Edit, X } from 'lucide-react';
+import { Search, Plus, X, BookOpen, Filter } from 'lucide-react';
 import { Book } from '../types';
 
 interface BooksProps {
@@ -7,17 +7,25 @@ interface BooksProps {
   setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
 }
 
+const DEPARTMENTS = [
+  'All', 'CS', 'SE', 'AI', 'IT', 'DS', 'English Literature', 
+  'BBA', 'Commerce', 'Finance', 'Accounting', 'Education'
+];
+
 export function Books({ books, setBooks }: BooksProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDept, setSelectedDept] = useState('All');
   const [isAdding, setIsAdding] = useState(false);
   const [newBookName, setNewBookName] = useState('');
   const [newBookAuthor, setNewBookAuthor] = useState('');
   const [newBookDepartment, setNewBookDepartment] = useState('CS');
 
-  const filteredBooks = books.filter(b => 
-    b.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    b.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredBooks = books.filter(b => {
+    const matchesSearch = b.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          b.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesDept = selectedDept === 'All' || b.department === selectedDept;
+    return matchesSearch && matchesDept;
+  });
 
   const handleAddBook = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,10 +106,9 @@ export function Books({ books, setBooks }: BooksProps) {
                 onChange={e => setNewBookDepartment(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700"
               >
-                <option value="CS">Computer Science</option>
-                <option value="IT">Information Technology</option>
-                <option value="Software Eng">Software Engineering</option>
-                <option value="General">General Knowledge</option>
+                {DEPARTMENTS.filter(d => d !== 'All').map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -113,9 +120,9 @@ export function Books({ books, setBooks }: BooksProps) {
         </form>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 flex-1 flex flex-col overflow-hidden">
-        <div className="p-5 border-b border-slate-100 bg-white">
-          <div className="relative max-w-md">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 flex-1 flex flex-col overflow-hidden p-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
             <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
@@ -125,36 +132,54 @@ export function Books({ books, setBooks }: BooksProps) {
               className="w-full pl-11 pr-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-800 placeholder-slate-400"
             />
           </div>
+          <div className="relative md:w-64">
+            <Filter className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 z-10" />
+            <select
+              value={selectedDept}
+              onChange={(e) => setSelectedDept(e.target.value)}
+              className="w-full pl-11 pr-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-800 appearance-none relative"
+            >
+              {DEPARTMENTS.map(dept => (
+                <option key={dept} value={dept}>{dept === 'All' ? 'All Departments' : dept}</option>
+              ))}
+            </select>
+          </div>
         </div>
         
-        <div className="overflow-x-auto flex-1">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
-                <th className="px-6 py-4">Book ID</th>
-                <th className="px-6 py-4">Book Name</th>
-                <th className="px-6 py-4">Author</th>
-                <th className="px-6 py-4">Department</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {filteredBooks.map((book) => (
-                <tr key={book.id} className="hover:bg-slate-50/80 transition-colors group">
-                  <td className="px-6 py-4 font-medium text-slate-900">{book.id}</td>
-                  <td className="px-6 py-4 font-medium text-slate-700">{book.name}</td>
-                  <td className="px-6 py-4 text-slate-500">{book.author}</td>
-                  <td className="px-6 py-4 text-slate-500">{book.department}</td>
-                </tr>
-              ))}
-              {filteredBooks.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
-                    No books found matching your search.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="overflow-y-auto flex-1 pb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredBooks.map((book) => (
+              <div key={book.id} className="border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow bg-white flex flex-col">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                    <BookOpen className="w-6 h-6 stroke-[1.5]" />
+                  </div>
+                  <span className="text-xs font-bold bg-blue-100 text-blue-800 px-2.5 py-1 rounded-md">
+                    {book.department}
+                  </span>
+                </div>
+                <h4 className="font-bold text-slate-900 mb-1 line-clamp-2" title={book.name}>{book.name}</h4>
+                <p className="text-sm text-slate-500 mb-4 line-clamp-1" title={book.author}>By {book.author}</p>
+                <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
+                  <span className="text-xs font-semibold text-slate-500">
+                    ID: {book.id}
+                  </span>
+                  <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                    book.status === 'Available' 
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' 
+                      : 'bg-rose-50 text-rose-700 border border-rose-200/60'
+                  }`}>
+                    {book.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          {filteredBooks.length === 0 && (
+            <div className="py-12 text-center text-slate-500">
+              No books found matching your criteria.
+            </div>
+          )}
         </div>
       </div>
     </div>

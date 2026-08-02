@@ -7,16 +7,22 @@ interface StudentDashboardProps {
   books: Book[];
   trackingRecords: IssueRecord[];
   onLogout: () => void;
+  onIssueBook: (studentName: string, rollNo: string, bookId: string, bookName: string, customExpectedReturnDate?: string) => void;
 }
 
-export function StudentDashboard({ student, books, trackingRecords, onLogout }: StudentDashboardProps) {
+export function StudentDashboard({ student, books, trackingRecords, onLogout, onIssueBook }: StudentDashboardProps) {
   const [activeTab, setActiveTab] = useState<'Dashboard' | 'Library' | 'Issued' | 'Profile'>('Dashboard');
+  const [issueModalOpen, setIssueModalOpen] = useState(false);
+  const [selectedBookForIssue, setSelectedBookForIssue] = useState<Book | null>(null);
+  
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [issueDate, setIssueDate] = useState(todayStr);
+  const [expectedReturnDate, setExpectedReturnDate] = useState('');
 
   const myRecords = trackingRecords.filter(r => r.studentId === student.id);
   const myIssued = myRecords.filter(r => r.status === 'Issued');
   const myHistory = myRecords.filter(r => r.status !== 'Issued');
 
-  const todayStr = new Date().toISOString().split('T')[0];
   const todayDate = new Date(todayStr);
 
   const calculateDaysLeft = (expectedDate: string) => {
@@ -40,6 +46,39 @@ export function StudentDashboard({ student, books, trackingRecords, onLogout }: 
   const downloadChallan = () => {
     // In a real app, generate PDF. Here we'll just alert.
     alert(`Downloading Fine Challan for Rs. ${totalFine} (Student ID: ${student.id})`);
+  };
+
+  const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'error') => {
+    setToastMessage({ text, type });
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4000);
+  };
+
+  const handleIssueBookSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBookForIssue) return;
+
+    if (myIssued.length >= 3) {
+      showToast('Maximum borrowing limit reached (3 books). Please return a book before borrowing another.', 'error');
+      return;
+    }
+
+    if (selectedBookForIssue.status !== 'Available') {
+      showToast('This book is currently issued and is not available.', 'error');
+      return;
+    }
+
+    onIssueBook(student.name, student.id, selectedBookForIssue.id, selectedBookForIssue.name, expectedReturnDate);
+    showToast('Book is available and allotted successfully!', 'success');
+    
+    setTimeout(() => {
+      setIssueModalOpen(false);
+      setSelectedBookForIssue(null);
+      setExpectedReturnDate('');
+    }, 1000);
   };
 
   // Find expected return dates for issued books
@@ -288,7 +327,16 @@ export function StudentDashboard({ student, books, trackingRecords, onLogout }: 
                 const daysLeft = expectedDate ? calculateDaysLeft(expectedDate) : null;
                 
                 return (
-                  <div key={book.id} className={`border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow ${isIssued ? 'opacity-70 bg-slate-50/50' : 'bg-white'}`}>
+                  <div 
+                    key={book.id} 
+                    onClick={() => {
+                      if (!isIssued) {
+                        setSelectedBookForIssue(book);
+                        setIssueModalOpen(true);
+                      }
+                    }}
+                    className={`border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow ${isIssued ? 'opacity-70 bg-slate-50/50' : 'bg-white cursor-pointer hover:border-emerald-500/50'}`}
+                  >
                     <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 mb-4">
                       <BookOpen className="w-6 h-6 stroke-[1.5]" />
                     </div>
@@ -353,6 +401,115 @@ export function StudentDashboard({ student, books, trackingRecords, onLogout }: 
                   <p className="font-semibold text-slate-900">{student.phone}</p>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Issue Book Modal */}
+        {issueModalOpen && selectedBookForIssue && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-3xl w-full max-w-2xl p-8 shadow-2xl relative">
+              {/* Toast Notification for Modal */}
+              {toastMessage && (
+                <div className={`absolute top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg border animate-in slide-in-from-top-2 fade-in duration-300 ${
+                  toastMessage.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+                }`}>
+                  {toastMessage.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                  <p className="font-medium text-sm">{toastMessage.text}</p>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                  <BookOpen className="w-6 h-6 text-emerald-500" />
+                  Issue Book
+                </h2>
+                <button 
+                  onClick={() => {
+                    setIssueModalOpen(false);
+                    setSelectedBookForIssue(null);
+                  }}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <AlertCircle className="w-6 h-6 rotate-45" />
+                </button>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+                <h4 className="font-bold text-slate-900">{selectedBookForIssue.name}</h4>
+                <p className="text-sm text-slate-500 mb-2">By {selectedBookForIssue.author}</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">ID: {selectedBookForIssue.id}</span>
+                  <span className="text-emerald-600 font-medium">Available</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleIssueBookSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700 block">Student ID</label>
+                    <input 
+                      type="text" 
+                      value={student.id}
+                      readOnly
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none transition-all text-slate-700 opacity-80 cursor-not-allowed"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700 block">Book ID</label>
+                    <input 
+                      type="text" 
+                      value={selectedBookForIssue.id}
+                      readOnly
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none transition-all text-slate-700 opacity-80 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700 block">Issue Date</label>
+                    <input 
+                      type="date" 
+                      readOnly
+                      value={issueDate}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none transition-all text-slate-700 opacity-80 cursor-not-allowed"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700 block">Expected Return Date</label>
+                    <input 
+                      type="date"
+                      required
+                      value={expectedReturnDate}
+                      onChange={(e) => setExpectedReturnDate(e.target.value)}
+                      min={issueDate}
+                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-slate-700"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 pt-4 border-t border-slate-100">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setIssueModalOpen(false);
+                      setSelectedBookForIssue(null);
+                    }}
+                    className="flex-1 px-4 py-3 text-slate-600 bg-slate-100 hover:bg-slate-200 font-semibold rounded-xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 px-4 py-3 text-white bg-emerald-500 hover:bg-emerald-600 font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition-all"
+                  >
+                    Confirm Issue
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

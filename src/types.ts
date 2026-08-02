@@ -10,7 +10,7 @@ export interface Student {
   id: string;
   name: string;
   department: string;
-  semester: number;
+  semester: string | number;
   phone: string;
   password?: string; // added for auth
 }

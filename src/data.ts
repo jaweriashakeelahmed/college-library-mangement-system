@@ -48,6 +48,14 @@ export const INITIAL_BOOKS: Book[] = [
   { id: 'B056', name: 'The Elements of Statistical Learning', author: 'Trevor Hastie', department: 'DS', status: 'Issued' },
   { id: 'B057', name: 'Fundamentals of Data Engineering', author: 'Joe Reis', department: 'DS', status: 'Available' },
   { id: 'B058', name: 'Storytelling with Data', author: 'Cole Nussbaumer Knaflic', department: 'DS', status: 'Available' },
+  
+  // Finance & Accounting
+  { id: 'B059', name: 'Principles of Corporate Finance', author: 'Brealey, Myers, Allen', department: 'Finance', status: 'Available' },
+  { id: 'B060', name: 'Financial Accounting', author: 'Weygandt, Kimmel, Kieso', department: 'Accounting', status: 'Available' },
+  
+  // Education
+  { id: 'B061', name: 'Democracy and Education', author: 'John Dewey', department: 'Education', status: 'Available' },
+  { id: 'B062', name: 'Pedagogy of the Oppressed', author: 'Paulo Freire', department: 'Education', status: 'Available' },
 ];
 
 export const INITIAL_STUDENTS: Student[] = [

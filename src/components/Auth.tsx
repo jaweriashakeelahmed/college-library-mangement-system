@@ -233,16 +233,37 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
 
               <div>
                 <label className="text-sm font-semibold text-slate-700 block mb-2">
-                  {view.includes('student') ? 'Student ID (Roll No)' : 'Username'}
+                  {view.includes('student') ? 'Student ID (Roll No)' : view === 'staff-register' ? 'Designation (Username)' : 'Username'}
                 </label>
-                <input 
-                  type="text" 
-                  required
-                  value={id}
-                  onChange={e => setId(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                  placeholder={view.includes('student') ? "e.g. 2k24/CS/12" : "Enter username"}
-                />
+                {view === 'staff-register' ? (
+                  <select 
+                    required
+                    value={id}
+                    onChange={e => setId(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  >
+                    <option value="" disabled>Select Designation</option>
+                    {[
+                      'Head of Librarian', 
+                      'Assistant Librarian', 
+                      'Library Staff 1', 
+                      'Library Staff 2', 
+                      'Library Staff 3', 
+                      'Principle'
+                    ].map(role => (
+                      <option key={role} value={role}>{role}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input 
+                    type="text" 
+                    required
+                    value={id}
+                    onChange={e => setId(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    placeholder={view.includes('student') ? "e.g. 2k24/CS/12" : "Enter username"}
+                  />
+                )}
               </div>
 
               {view === 'student-register' && (
@@ -257,20 +278,25 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                       >
                         <option value="" disabled>Select Dept</option>
-                        {['CS', 'SE', 'AI', 'IT', 'DS', 'English Literature', 'BBA', 'Commerce'].map(dept => (
+                        {['CS', 'SE', 'AI', 'IT', 'DS', 'English Literature', 'BBA', 'Commerce', 'Finance', 'Accounting', 'Education'].map(dept => (
                           <option key={dept} value={dept}>{dept}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="text-sm font-semibold text-slate-700 block mb-2">Semester</label>
+                      <label className="text-sm font-semibold text-slate-700 block mb-2">Year</label>
                       <select 
                         value={semester}
                         onChange={e => setSemester(e.target.value)}
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                       >
-                        {[1,2,3,4,5,6,7,8].map(num => (
-                          <option key={num} value={num}>{num}</option>
+                        {[
+                          '1st year part 1', '1st year part 2', 
+                          '2nd year part 1', '2nd year part 2',
+                          '3rd year part 1', '3rd year part 2',
+                          '4th year part 1', '4th year part 2'
+                        ].map(val => (
+                          <option key={val} value={val}>{val}</option>
                         ))}
                       </select>
                     </div>
