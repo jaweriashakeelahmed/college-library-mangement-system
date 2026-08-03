@@ -180,7 +180,16 @@ export function Students({ students, setStudents, trackingRecords }: StudentsPro
               {filteredStudents.map((student) => (
                 <tr key={student.id} className="hover:bg-slate-50/80 transition-colors group">
                   <td className="px-6 py-4 font-medium text-slate-900">{student.id}</td>
-                  <td className="px-6 py-4 font-medium text-slate-700">{student.name}</td>
+                  <td className="px-6 py-4 font-medium text-slate-700 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
+                      {student.photoUrl ? (
+                        <img src={student.photoUrl} alt={student.name} className="w-full h-full object-cover" />
+                      ) : (
+                        student.name.charAt(0)
+                      )}
+                    </div>
+                    {student.name}
+                  </td>
                   <td className="px-6 py-4 text-slate-500">{student.department}</td>
                   <td className="px-6 py-4 text-slate-500">{student.semester}</td>
                   <td className="px-6 py-4 text-slate-500">{student.phone}</td>

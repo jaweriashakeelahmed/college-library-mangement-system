@@ -202,6 +202,9 @@ export default function App() {
         onIssueBook={handleIssueBook}
         onToggleWishlist={handleToggleWishlist}
         onReturnRequest={handleReturnRequest}
+        onUpdateProfile={(studentId, updates) => {
+          setStudents(students.map(s => s.id === studentId ? { ...s, ...updates } : s));
+        }}
       />
     );
   }

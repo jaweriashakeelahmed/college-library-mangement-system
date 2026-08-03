@@ -15,6 +15,7 @@ export interface Student {
   phone: string;
   password?: string; // added for auth
   wishlist?: string[]; // array of book IDs
+  photoUrl?: string; // profile photo
 }
 
 export interface Staff {

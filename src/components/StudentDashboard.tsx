@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Book, IssueRecord, Student, ReturnRequest } from '../types';
-import { BookOpen, User, Clock, AlertCircle, FileText, CheckCircle2, LogOut, Bell, Heart, X, Check } from 'lucide-react';
+import { BookOpen, User, Clock, AlertCircle, FileText, CheckCircle2, LogOut, Bell, Heart, X, Check, Camera } from 'lucide-react';
+import { CameraCapture } from './CameraCapture';
 
 interface StudentDashboardProps {
   student: Student;
@@ -11,9 +12,10 @@ interface StudentDashboardProps {
   onIssueBook: (studentName: string, rollNo: string, bookId: string, bookName: string, customExpectedReturnDate?: string) => void;
   onToggleWishlist: (studentId: string, bookId: string) => void;
   onReturnRequest: (request: any) => void;
+  onUpdateProfile: (studentId: string, updates: Partial<Student>) => void;
 }
 
-export function StudentDashboard({ student, books, trackingRecords, returnRequests = [], onLogout, onIssueBook, onToggleWishlist, onReturnRequest }: StudentDashboardProps) {
+export function StudentDashboard({ student, books, trackingRecords, returnRequests = [], onLogout, onIssueBook, onToggleWishlist, onReturnRequest, onUpdateProfile }: StudentDashboardProps) {
   const [activeTab, setActiveTab] = useState<'Dashboard' | 'Library' | 'Issued' | 'Profile' | 'Wishlist'>('Dashboard');
   const [issueModalOpen, setIssueModalOpen] = useState(false);
   const [selectedBookForIssue, setSelectedBookForIssue] = useState<Book | null>(null);
@@ -22,6 +24,7 @@ export function StudentDashboard({ student, books, trackingRecords, returnReques
   const [requestType, setRequestType] = useState<'Return Before Time' | 'Exchange'>('Return Before Time');
   const [requestReason, setRequestReason] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   
   const todayStr = new Date().toISOString().split('T')[0];
   const [issueDate, setIssueDate] = useState(todayStr);
@@ -287,8 +290,12 @@ export function StudentDashboard({ student, books, trackingRecords, returnReques
                 </div>
               )}
             </div>
-            <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center font-bold">
-              {student.name.charAt(0)}
+            <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center font-bold overflow-hidden shadow-sm shrink-0">
+              {student.photoUrl ? (
+                <img src={student.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                student.name.charAt(0)
+              )}
             </div>
           </div>
         </header>
@@ -524,8 +531,20 @@ export function StudentDashboard({ student, books, trackingRecords, returnReques
             <h3 className="text-xl font-bold text-slate-800 mb-6">My Profile</h3>
             <div className="space-y-6">
               <div className="flex items-center gap-6 pb-6 border-b border-slate-100">
-                <div className="w-24 h-24 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-3xl font-bold">
-                  {student.name.charAt(0)}
+                <div className="relative group">
+                  <div className="w-24 h-24 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-3xl font-bold overflow-hidden shadow-inner">
+                    {student.photoUrl ? (
+                      <img src={student.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      student.name.charAt(0)
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => setShowCamera(true)}
+                    className="absolute inset-0 bg-slate-900/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer font-semibold flex-col gap-1"
+                  >
+                    <Camera className="w-5 h-5" />
+                  </button>
                 </div>
                 <div>
                   <h4 className="text-2xl font-bold text-slate-900">{student.name}</h4>
@@ -830,6 +849,16 @@ export function StudentDashboard({ student, books, trackingRecords, returnReques
               </form>
             </div>
           </div>
+        )}
+
+        {showCamera && (
+          <CameraCapture 
+            onCapture={(imageSrc) => {
+              onUpdateProfile(student.id, { photoUrl: imageSrc });
+              setShowCamera(false);
+            }}
+            onCancel={() => setShowCamera(false)}
+          />
         )}
 
       </main>
