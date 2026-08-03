@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Calendar } from 'lucide-react';
+import { Search, Calendar, Download } from 'lucide-react';
 import { IssueRecord } from '../types';
 
 interface IssueHistoryProps {
@@ -47,11 +47,50 @@ export function IssueHistory({ records }: IssueHistoryProps) {
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   };
 
+  const exportToCSV = () => {
+    const headers = ['Student ID', 'Student Name', 'Book ID', 'Book Name', 'Issue Date', 'Due Date', 'Return Date', 'Late Days', 'Fine', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredRecords.map(r => 
+        [
+          `"${r.studentId}"`,
+          `"${r.studentName}"`,
+          `"${r.bookId}"`,
+          `"${r.bookName.replace(/"/g, '""')}"`,
+          `"${formatDate(r.issueDate)}"`,
+          `"${formatDate(r.expectedReturnDate)}"`,
+          `"${formatDate(r.returnDate)}"`,
+          `"${r.lateDays > 0 ? r.lateDays : '-'}"`,
+          `"${r.fine > 0 ? r.fine : '-'}"`,
+          `"${r.status}${r.status === 'Returned' && r.returnStatus ? ` (${r.returnStatus})` : ''}"`
+        ].join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `issue_history_${todayStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6 h-full flex flex-col">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-800">Issue History</h2>
-        <p className="text-slate-500 mt-1">Track all current and past book issuances.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Issue History</h2>
+          <p className="text-slate-500 mt-1">Track all current and past book issuances.</p>
+        </div>
+        <button 
+          onClick={exportToCSV}
+          className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 hover:text-blue-600 transition-all shadow-sm whitespace-nowrap"
+        >
+          <Download className="w-4 h-4" />
+          Export CSV
+        </button>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 flex-1 flex flex-col overflow-hidden">

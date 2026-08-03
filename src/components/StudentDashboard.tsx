@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Book, IssueRecord, Student } from '../types';
-import { BookOpen, User, Clock, AlertCircle, FileText, CheckCircle2, LogOut, Bell } from 'lucide-react';
+import { BookOpen, User, Clock, AlertCircle, FileText, CheckCircle2, LogOut, Bell, Heart } from 'lucide-react';
 
 interface StudentDashboardProps {
   student: Student;
@@ -8,10 +8,11 @@ interface StudentDashboardProps {
   trackingRecords: IssueRecord[];
   onLogout: () => void;
   onIssueBook: (studentName: string, rollNo: string, bookId: string, bookName: string, customExpectedReturnDate?: string) => void;
+  onToggleWishlist: (studentId: string, bookId: string) => void;
 }
 
-export function StudentDashboard({ student, books, trackingRecords, onLogout, onIssueBook }: StudentDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'Dashboard' | 'Library' | 'Issued' | 'Profile'>('Dashboard');
+export function StudentDashboard({ student, books, trackingRecords, onLogout, onIssueBook, onToggleWishlist }: StudentDashboardProps) {
+  const [activeTab, setActiveTab] = useState<'Dashboard' | 'Library' | 'Issued' | 'Profile' | 'Wishlist'>('Dashboard');
   const [issueModalOpen, setIssueModalOpen] = useState(false);
   const [selectedBookForIssue, setSelectedBookForIssue] = useState<Book | null>(null);
   
@@ -135,6 +136,15 @@ export function StudentDashboard({ student, books, trackingRecords, onLogout, on
             >
               <User className="w-5 h-5 stroke-[1.5]" />
               My Profile
+            </button>
+            <button 
+              onClick={() => setActiveTab('Wishlist')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
+                activeTab === 'Wishlist' ? 'bg-emerald-500/10 text-emerald-400' : 'hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <Heart className="w-5 h-5 stroke-[1.5]" />
+              My Wishlist
             </button>
           </nav>
         </div>
@@ -335,10 +345,21 @@ export function StudentDashboard({ student, books, trackingRecords, onLogout, on
                         setIssueModalOpen(true);
                       }
                     }}
-                    className={`border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow ${isIssued ? 'opacity-70 bg-slate-50/50' : 'bg-white cursor-pointer hover:border-emerald-500/50'}`}
+                    className={`border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow relative ${isIssued ? 'opacity-70 bg-slate-50/50' : 'bg-white cursor-pointer hover:border-emerald-500/50'}`}
                   >
-                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 mb-4">
-                      <BookOpen className="w-6 h-6 stroke-[1.5]" />
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                        <BookOpen className="w-6 h-6 stroke-[1.5]" />
+                      </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleWishlist(student.id, book.id);
+                        }}
+                        className={`p-2 rounded-full transition-colors ${student.wishlist?.includes(book.id) ? 'text-rose-500 bg-rose-50 hover:bg-rose-100' : 'text-slate-400 bg-slate-50 hover:bg-slate-100 hover:text-slate-600'}`}
+                      >
+                        <Heart className="w-5 h-5" fill={student.wishlist?.includes(book.id) ? "currentColor" : "none"} />
+                      </button>
                     </div>
                     <h4 className="font-bold text-slate-900 mb-1">{book.name}</h4>
                     <p className="text-sm text-slate-500 mb-4">By {book.author}</p>
@@ -402,6 +423,88 @@ export function StudentDashboard({ student, books, trackingRecords, onLogout, on
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'Wishlist' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+              <Heart className="w-5 h-5 text-rose-500" fill="currentColor" />
+              My Wishlist
+            </h3>
+            
+            {!student.wishlist || student.wishlist.length === 0 ? (
+              <div className="text-center py-12">
+                <Heart className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-slate-700 mb-1">Your wishlist is empty</h4>
+                <p className="text-slate-500">Explore the Library Catalog and tap the heart icon to save books for later.</p>
+                <button 
+                  onClick={() => setActiveTab('Library')}
+                  className="mt-6 px-6 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium rounded-xl transition-colors"
+                >
+                  Browse Catalog
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {books.filter(book => student.wishlist?.includes(book.id)).map(book => {
+                  const isIssued = book.status !== 'Available';
+                  const expectedDate = isIssued ? getExpectedReturnDate(book.id) : null;
+                  const daysLeft = expectedDate ? calculateDaysLeft(expectedDate) : null;
+                  
+                  return (
+                    <div 
+                      key={book.id} 
+                      onClick={() => {
+                        if (!isIssued) {
+                          setSelectedBookForIssue(book);
+                          setIssueModalOpen(true);
+                        }
+                      }}
+                      className={`border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow relative ${isIssued ? 'opacity-70 bg-slate-50/50' : 'bg-white cursor-pointer hover:border-emerald-500/50'}`}
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                          <BookOpen className="w-6 h-6 stroke-[1.5]" />
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleWishlist(student.id, book.id);
+                          }}
+                          className={`p-2 rounded-full transition-colors text-rose-500 bg-rose-50 hover:bg-rose-100`}
+                        >
+                          <Heart className="w-5 h-5" fill="currentColor" />
+                        </button>
+                      </div>
+                      <h4 className="font-bold text-slate-900 mb-1">{book.name}</h4>
+                      <p className="text-sm text-slate-500 mb-4">By {book.author}</p>
+                      <div className="flex flex-col gap-2 mt-auto">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                            {book.department}
+                          </span>
+                          {isIssued ? (
+                            <span className="text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/60 px-2 py-1 rounded">
+                              Issued
+                            </span>
+                          ) : (
+                            <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2 py-1 rounded">
+                              Available
+                            </span>
+                          )}
+                        </div>
+                        {isIssued && daysLeft !== null && (
+                          <div className="text-xs font-medium text-slate-500 mt-1">
+                            {daysLeft < 0 ? 'Overdue - returning soon' : `Available in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

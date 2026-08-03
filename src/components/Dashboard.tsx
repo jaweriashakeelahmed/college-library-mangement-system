@@ -45,8 +45,8 @@ export function Dashboard({ books, students, trackingRecords }: DashboardProps) 
         {stats.map((stat, i) => {
           const Icon = stat.icon;
           return (
-            <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 flex flex-col gap-3 transition-shadow hover:shadow-md">
-              <div className={`${stat.color} p-3 rounded-xl self-start`}>
+            <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 flex flex-col gap-3 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-slate-300 group cursor-default">
+              <div className={`${stat.color} p-3 rounded-xl self-start transition-transform duration-300 group-hover:scale-110`}>
                 <Icon className="w-6 h-6" />
               </div>
               <div>

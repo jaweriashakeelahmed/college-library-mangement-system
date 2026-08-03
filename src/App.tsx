@@ -76,6 +76,20 @@ export default function App() {
     }
   }, [currentUser]);
 
+  const handleToggleWishlist = (studentId: string, bookId: string) => {
+    setStudents(prev => prev.map(s => {
+      if (s.id === studentId) {
+        const wishlist = s.wishlist || [];
+        if (wishlist.includes(bookId)) {
+          return { ...s, wishlist: wishlist.filter(id => id !== bookId) };
+        } else {
+          return { ...s, wishlist: [...wishlist, bookId] };
+        }
+      }
+      return s;
+    }));
+  };
+
   const handleIssueBook = (studentName: string, rollNo: string, bookId: string, bookName: string, customExpectedReturnDate?: string) => {
     // Update book status
     setBooks(prev => prev.map(b => b.id === bookId ? { ...b, status: 'Issued' } : b));
@@ -156,6 +170,7 @@ export default function App() {
         trackingRecords={trackingRecords} 
         onLogout={handleLogout} 
         onIssueBook={handleIssueBook}
+        onToggleWishlist={handleToggleWishlist}
       />
     );
   }
@@ -184,6 +199,10 @@ export default function App() {
     { id: 'About', label: 'About', icon: Info },
   ] as const;
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayDate = new Date(todayStr);
+  const activeOverdueCount = trackingRecords.filter(r => r.status === 'Issued' && todayDate > new Date(r.expectedReturnDate)).length;
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
       {/* Top Bar */}
@@ -211,6 +230,9 @@ export default function App() {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
+              const isDashboard = item.id === 'Home';
+              const showBadge = isDashboard && activeOverdueCount > 0;
+              
               return (
                 <button
                   key={item.id}
@@ -221,8 +243,13 @@ export default function App() {
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                  {item.label}
+                  <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {showBadge && (
+                    <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                      {activeOverdueCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -234,15 +261,25 @@ export default function App() {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const isDashboard = item.id === 'Home';
+            const showBadge = isDashboard && activeOverdueCount > 0;
+            
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id as TabType)}
-                className={`flex flex-col items-center justify-center min-w-[72px] flex-1 py-3 px-1 transition-all duration-200 ${
+                className={`relative flex flex-col items-center justify-center min-w-[72px] flex-1 py-3 px-1 transition-all duration-200 ${
                   isActive ? 'text-blue-600' : 'text-slate-500'
                 }`}
               >
-                <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                <div className="relative">
+                  <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                  {showBadge && (
+                    <span className="absolute -top-1 -right-2 bg-rose-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+                      {activeOverdueCount}
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] font-medium text-center whitespace-nowrap">{item.label}</span>
               </button>
             );

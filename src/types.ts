@@ -4,6 +4,7 @@ export interface Book {
   author: string;
   department: string;
   status: 'Available' | 'Issued';
+  imageUrl?: string;
 }
 
 export interface Student {
@@ -13,6 +14,7 @@ export interface Student {
   semester: string | number;
   phone: string;
   password?: string; // added for auth
+  wishlist?: string[]; // array of book IDs
 }
 
 export interface Staff {
