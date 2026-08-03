@@ -1,20 +1,27 @@
-import React, { useState } from 'react';
-import { Book, IssueRecord, Student } from '../types';
-import { BookOpen, User, Clock, AlertCircle, FileText, CheckCircle2, LogOut, Bell, Heart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Book, IssueRecord, Student, ReturnRequest } from '../types';
+import { BookOpen, User, Clock, AlertCircle, FileText, CheckCircle2, LogOut, Bell, Heart, X, Check } from 'lucide-react';
 
 interface StudentDashboardProps {
   student: Student;
   books: Book[];
   trackingRecords: IssueRecord[];
+  returnRequests?: ReturnRequest[];
   onLogout: () => void;
   onIssueBook: (studentName: string, rollNo: string, bookId: string, bookName: string, customExpectedReturnDate?: string) => void;
   onToggleWishlist: (studentId: string, bookId: string) => void;
+  onReturnRequest: (request: any) => void;
 }
 
-export function StudentDashboard({ student, books, trackingRecords, onLogout, onIssueBook, onToggleWishlist }: StudentDashboardProps) {
+export function StudentDashboard({ student, books, trackingRecords, returnRequests = [], onLogout, onIssueBook, onToggleWishlist, onReturnRequest }: StudentDashboardProps) {
   const [activeTab, setActiveTab] = useState<'Dashboard' | 'Library' | 'Issued' | 'Profile' | 'Wishlist'>('Dashboard');
   const [issueModalOpen, setIssueModalOpen] = useState(false);
   const [selectedBookForIssue, setSelectedBookForIssue] = useState<Book | null>(null);
+  const [returnRequestModalOpen, setReturnRequestModalOpen] = useState(false);
+  const [selectedRecordForRequest, setSelectedRecordForRequest] = useState<IssueRecord | null>(null);
+  const [requestType, setRequestType] = useState<'Return Before Time' | 'Exchange'>('Return Before Time');
+  const [requestReason, setRequestReason] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
   
   const todayStr = new Date().toISOString().split('T')[0];
   const [issueDate, setIssueDate] = useState(todayStr);
@@ -43,6 +50,61 @@ export function StudentDashboard({ student, books, trackingRecords, onLogout, on
 
   const totalFine = myRecords.reduce((acc, curr) => acc + getFine(curr), 0);
   const activeOverdue = myIssued.filter(r => calculateDaysLeft(r.expectedReturnDate) < 0);
+
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    const notifs = [];
+    
+    // 1. Overdue Books
+    activeOverdue.forEach(record => {
+      notifs.push({
+        id: `overdue-${record.id}`,
+        title: 'Overdue Book',
+        message: `"${record.bookName}" is overdue by ${Math.abs(calculateDaysLeft(record.expectedReturnDate))} days.`,
+        type: 'alert',
+        date: new Date().toISOString()
+      });
+    });
+
+    // 2. Fines
+    if (totalFine > 0) {
+      notifs.push({
+        id: `fine-${student.id}`,
+        title: 'Outstanding Fine',
+        message: `You have an outstanding fine of Rs. ${totalFine}.`,
+        type: 'warning',
+        date: new Date().toISOString()
+      });
+    }
+
+    // 3. Return Requests Updates
+    const myRequests = returnRequests.filter(req => req.studentId === student.id);
+    myRequests.forEach(req => {
+      if (req.status !== 'Pending') {
+        notifs.push({
+          id: `req-${req.id}`,
+          title: `Request ${req.status}`,
+          message: `Your ${req.type.toLowerCase()} request for "${req.bookName}" has been ${req.status.toLowerCase()}.`,
+          type: req.status === 'Approved' ? 'success' : 'alert',
+          date: req.requestDate
+        });
+      }
+    });
+
+    // 4. New books notification
+    if (books.length > 50) {
+      notifs.push({
+        id: 'new-books-1',
+        title: 'New Books Added',
+        message: 'New books have been added to the library catalog recently. Check them out!',
+        type: 'info',
+        date: new Date().toISOString()
+      });
+    }
+
+    setNotifications(notifs);
+  }, [trackingRecords, returnRequests, books.length, student.id, totalFine]);
 
   const downloadChallan = () => {
     // In a real app, generate PDF. Here we'll just alert.
@@ -165,12 +227,66 @@ export function StudentDashboard({ student, books, trackingRecords, onLogout, on
             <p className="text-slate-500 text-sm">{student.id} - Dept. of {student.department}, Semester {student.semester}</p>
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative p-2 text-slate-400 hover:bg-white rounded-full transition-colors">
-              <Bell className="w-6 h-6 stroke-[1.5]" />
-              {activeOverdue.length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className={`relative p-2 rounded-full transition-colors ${showNotifications ? 'bg-slate-200 text-slate-600' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
+              >
+                <Bell className="w-6 h-6 stroke-[1.5]" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 border-2 border-slate-50 rounded-full"></span>
+                )}
+              </button>
+              
+              {showNotifications && (
+                <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden z-50">
+                  <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/80">
+                    <h3 className="font-bold text-slate-800">Notifications</h3>
+                    {notifications.length > 0 && (
+                      <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                        {notifications.length} New
+                      </span>
+                    )}
+                  </div>
+                  <div className="max-h-[24rem] overflow-y-auto">
+                    {notifications.length > 0 ? (
+                      <div className="divide-y divide-slate-100">
+                        {notifications.map(notif => (
+                          <div key={notif.id} className="p-4 hover:bg-slate-50 transition-colors">
+                            <div className="flex gap-3">
+                              <div className={`mt-0.5 rounded-full p-1.5 h-fit shrink-0 ${
+                                notif.type === 'alert' ? 'bg-rose-100 text-rose-600' : 
+                                notif.type === 'warning' ? 'bg-amber-100 text-amber-600' :
+                                notif.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
+                                'bg-blue-100 text-blue-600'
+                              }`}>
+                                {notif.type === 'alert' && <AlertCircle className="w-4 h-4" />}
+                                {notif.type === 'warning' && <Clock className="w-4 h-4" />}
+                                {notif.type === 'success' && <Check className="w-4 h-4" />}
+                                {notif.type === 'info' && <Bell className="w-4 h-4" />}
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-semibold text-slate-800">{notif.title}</h4>
+                                <p className="text-sm text-slate-600 mt-0.5 leading-snug">{notif.message}</p>
+                                <span className="text-xs text-slate-400 mt-1.5 block">
+                                  {new Date(notif.date).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-8 flex flex-col items-center justify-center text-center">
+                        <Bell className="w-8 h-8 text-slate-200 mb-3" />
+                        <p className="text-slate-500 font-medium">All caught up!</p>
+                        <p className="text-slate-400 text-sm mt-1">No new notifications</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
-            </button>
+            </div>
             <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center font-bold">
               {student.name.charAt(0)}
             </div>
@@ -282,7 +398,8 @@ export function StudentDashboard({ student, books, trackingRecords, onLogout, on
                       <th className="px-4 py-3">Issue Date</th>
                       <th className="px-4 py-3">Due Date</th>
                       <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3 rounded-r-lg">Fine</th>
+                      <th className="px-4 py-3">Fine</th>
+                      <th className="px-4 py-3 rounded-r-lg text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -311,11 +428,22 @@ export function StudentDashboard({ student, books, trackingRecords, onLogout, on
                           <td className="px-4 py-4 font-semibold text-slate-900">
                             Rs. {getFine(record)}
                           </td>
+                          <td className="px-4 py-4 text-right">
+                            <button
+                              onClick={() => {
+                                setSelectedRecordForRequest(record);
+                                setReturnRequestModalOpen(true);
+                              }}
+                              className="text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                              Request Return
+                            </button>
+                          </td>
                         </tr>
                       );
                     }) : (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                        <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                           You haven't issued any books currently.
                         </td>
                       </tr>
@@ -610,6 +738,93 @@ export function StudentDashboard({ student, books, trackingRecords, onLogout, on
                     className="flex-1 px-4 py-3 text-white bg-emerald-500 hover:bg-emerald-600 font-semibold rounded-xl shadow-lg shadow-emerald-500/30 transition-all"
                   >
                     Confirm Issue
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Return Request Modal */}
+        {returnRequestModalOpen && selectedRecordForRequest && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-3xl w-full max-w-xl p-8 shadow-2xl relative">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                  <FileText className="w-6 h-6 text-blue-500" />
+                  Request Return/Exchange
+                </h3>
+                <button 
+                  onClick={() => {
+                    setReturnRequestModalOpen(false);
+                    setSelectedRecordForRequest(null);
+                    setRequestReason('');
+                  }}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <AlertCircle className="w-6 h-6 rotate-45" />
+                </button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                onReturnRequest({
+                  id: `REQ${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+                  studentId: student.id,
+                  studentName: student.name,
+                  bookId: selectedRecordForRequest.bookId,
+                  bookName: selectedRecordForRequest.bookName,
+                  type: requestType,
+                  reason: requestReason,
+                  status: 'Pending',
+                  requestDate: new Date().toISOString().split('T')[0]
+                });
+                setReturnRequestModalOpen(false);
+                setSelectedRecordForRequest(null);
+                setRequestReason('');
+                showToast('Request submitted successfully!', 'success');
+              }} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">Request Type</label>
+                  <select
+                    value={requestType}
+                    onChange={(e: any) => setRequestType(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  >
+                    <option value="Return Before Time">Return Before Time</option>
+                    <option value="Exchange">Exchange Book</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 block">Reason</label>
+                  <textarea
+                    required
+                    value={requestReason}
+                    onChange={(e) => setRequestReason(e.target.value)}
+                    placeholder="Briefly state your reason..."
+                    rows={4}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                  ></textarea>
+                </div>
+
+                <div className="flex gap-4 pt-4 border-t border-slate-100">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setReturnRequestModalOpen(false);
+                      setSelectedRecordForRequest(null);
+                      setRequestReason('');
+                    }}
+                    className="flex-1 px-4 py-3 text-slate-600 bg-slate-100 hover:bg-slate-200 font-semibold rounded-xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 px-4 py-3 text-white bg-blue-600 hover:bg-blue-700 font-semibold rounded-xl shadow-lg shadow-blue-500/30 transition-all"
+                  >
+                    Submit Request
                   </button>
                 </div>
               </form>

@@ -52,3 +52,15 @@ export interface ReturnRecord {
   fine: number;
   status: 'Returned';
 }
+
+export interface ReturnRequest {
+  id: string;
+  studentId: string;
+  studentName: string;
+  bookId: string;
+  bookName: string;
+  type: 'Return Before Time' | 'Exchange';
+  reason: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  requestDate: string;
+}

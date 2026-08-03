@@ -17,12 +17,13 @@ import { IssueBook } from './components/IssueBook';
 import { ReturnBook } from './components/ReturnBook';
 import { IssueHistory } from './components/IssueHistory';
 import { About } from './components/About';
+import { Requests } from './components/Requests';
 import { INITIAL_BOOKS, INITIAL_STUDENTS } from './data';
 import { IssueRecord, Book, Student, Staff, CurrentUser } from './types';
 import { Auth } from './components/Auth';
 import { StudentDashboard } from './components/StudentDashboard';
 
-export type TabType = 'Home' | 'Books' | 'Students' | 'Issue' | 'Return' | 'Tracking' | 'About';
+export type TabType = 'Home' | 'Books' | 'Students' | 'Issue' | 'Return' | 'Tracking' | 'Requests' | 'About';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() => {
@@ -51,6 +52,10 @@ export default function App() {
       { id: 'REC002', studentId: '2k25/IT/10', studentName: 'Zainab Tariq', bookId: 'B003', bookName: 'C++ Programming', issueDate: '2026-07-25', expectedReturnDate: '2026-08-09', status: 'Issued' },
     ];
   });
+  const [returnRequests, setReturnRequests] = useState<any[]>(() => {
+    const saved = localStorage.getItem('lms_return_requests');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   useEffect(() => {
     localStorage.setItem('lms_books', JSON.stringify(books));
@@ -67,6 +72,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('lms_tracking', JSON.stringify(trackingRecords));
   }, [trackingRecords]);
+
+  useEffect(() => {
+    localStorage.setItem('lms_return_requests', JSON.stringify(returnRequests));
+  }, [returnRequests]);
 
   useEffect(() => {
     if (currentUser) {
@@ -146,6 +155,26 @@ export default function App() {
     setCurrentUser(null);
   };
 
+  const handleReturnRequest = (request: any) => {
+    setReturnRequests(prev => [request, ...prev]);
+  };
+
+  const handleApproveReturnRequest = (requestId: string, status: 'Approved' | 'Rejected') => {
+    setReturnRequests(prev => prev.map(r => r.id === requestId ? { ...r, status } : r));
+    if (status === 'Approved') {
+      const request = returnRequests.find(r => r.id === requestId);
+      if (request) {
+        // If it's a return or exchange, mark book as available or handle logic
+        setBooks(prev => prev.map(b => b.id === request.bookId ? { ...b, status: 'Available' } : b));
+        setTrackingRecords(prev => prev.map(r => 
+          (r.bookId === request.bookId && r.status === 'Issued') 
+            ? { ...r, status: 'Returned', returnDate: new Date().toISOString().split('T')[0] } 
+            : r
+        ));
+      }
+    }
+  };
+
   if (!currentUser) {
     return (
       <Auth 
@@ -168,9 +197,11 @@ export default function App() {
         student={studentData} 
         books={books} 
         trackingRecords={trackingRecords} 
+        returnRequests={returnRequests}
         onLogout={handleLogout} 
         onIssueBook={handleIssueBook}
         onToggleWishlist={handleToggleWishlist}
+        onReturnRequest={handleReturnRequest}
       />
     );
   }
@@ -184,6 +215,7 @@ export default function App() {
       case 'Issue': return <IssueBook books={books} students={students} onIssueBook={handleIssueBook} trackingRecords={trackingRecords} />;
       case 'Return': return <ReturnBook trackingRecords={trackingRecords} onReturnBook={handleReturnBook} />;
       case 'Tracking': return <IssueHistory records={trackingRecords} />;
+      case 'Requests': return <Requests returnRequests={returnRequests} onApprove={handleApproveReturnRequest} />;
       case 'About': return <About />;
       default: return <Dashboard books={books} students={students} trackingRecords={trackingRecords} />;
     }
@@ -196,6 +228,7 @@ export default function App() {
     { id: 'Issue', label: 'Issue Book', icon: BookUp },
     { id: 'Return', label: 'Return Book', icon: BookDown },
     { id: 'Tracking', label: 'Tracking Records', icon: History },
+    { id: 'Requests', label: 'Requests', icon: Info },
     { id: 'About', label: 'About', icon: Info },
   ] as const;
 

@@ -95,7 +95,7 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
     ];
 
     if (!allowedDesignations.includes(id.toLowerCase())) {
-      setError('Invalid designation. Must be one of: principle, head of library, assistant of librarian, staff 1, staff 2, staff 3');
+      setError('Username is incorrect. Must be one of: principle, head of library, assistant of librarian, staff 1, staff 2, staff 3');
       return;
     }
 
@@ -286,9 +286,9 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
                       >
                         {[
                           '1st year part 1', '1st year part 2', 
-                          '2nd year part 1', '2nd year part 2',
-                          '3rd year part 1', '3rd year part 2',
-                          '4th year part 1', '4th year part 2'
+                          '2nd year part 3', '2nd year part 4',
+                          '3rd year part 5', '3rd year part 6',
+                          '4th year part 7', '4th year part 8'
                         ].map(val => (
                           <option key={val} value={val}>{val}</option>
                         ))}

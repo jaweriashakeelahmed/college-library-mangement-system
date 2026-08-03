@@ -134,6 +134,7 @@ export function IssueHistory({ records }: IssueHistoryProps) {
                 <th className="px-6 py-4">Late Days</th>
                 <th className="px-6 py-4">Fine</th>
                 <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
@@ -169,11 +170,25 @@ export function IssueHistory({ records }: IssueHistoryProps) {
                       </span>
                     )}
                   </td>
+                  <td className="px-6 py-4 text-right">
+                    {record.status === 'Overdue' && (
+                      <button 
+                        onClick={() => {
+                          const subject = `Overdue Book Notice: ${record.bookName}`;
+                          const body = `Dear ${record.studentName},\n\nThis is a reminder that the book "${record.bookName}" (ID: ${record.bookId}) was due on ${formatDate(record.expectedReturnDate)}.\n\nIt is currently overdue by ${record.lateDays} days, with an accumulated fine of Rs.${record.fine}.\n\nPlease return the book to the library as soon as possible.\n\nThank you,\nLibrary Administration`;
+                          window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                        }}
+                        className="text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center"
+                      >
+                        Send Notice
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {filteredRecords.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={11} className="px-6 py-12 text-center text-slate-500">
                     No records found matching your search.
                   </td>
                 </tr>

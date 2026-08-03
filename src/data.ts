@@ -1,5 +1,39 @@
 import { Book, Student } from './types';
 
+const generateBooks = (): Book[] => {
+  const books: Book[] = [];
+  let idCounter = 100;
+  
+  const addBooks = (department: string, subjects: string[], authors: string[]) => {
+    // Generate 45 books per department
+    for (let i = 0; i < 45; i++) {
+      const subject = subjects[i % subjects.length];
+      const prefix = ["Advanced", "Principles of", "Introduction to", "Mastering", "Fundamentals of", "Applied", "Modern", "Essentials of", "Practical"][i % 9];
+      const author = authors[i % authors.length];
+      const version = i >= subjects.length ? ` Edition ${Math.floor(i / subjects.length) + 1}` : '';
+      
+      books.push({
+        id: `B${idCounter++}`,
+        name: `${prefix} ${subject}${version}`,
+        author: author,
+        department: department,
+        status: i % 7 === 0 ? 'Issued' : 'Available'
+      });
+    }
+  };
+
+  addBooks('CS', ['Data Structures', 'Algorithms', 'Operating Systems', 'Database Systems', 'Computer Architecture', 'Theory of Computation', 'Compilers'], ['Robert Lafore', 'Thomas H. Cormen', 'Abraham Silberschatz', 'Elmasri & Navathe', 'John L. Hennessy']);
+  addBooks('SE', ['Software Engineering', 'Design Patterns', 'Software Architecture', 'Agile Methodologies', 'Software Testing', 'Requirements Engineering', 'DevOps'], ['Ian Sommerville', 'Erich Gamma', 'Martin Fowler', 'Steve McConnell', 'Robert C. Martin']);
+  addBooks('IT', ['Computer Networking', 'Cloud Computing', 'Cybersecurity', 'System Administration', 'Information Systems', 'IT Project Management', 'Web Technologies'], ['James Kurose', 'Andrew S. Tanenbaum', 'William Stallings', 'Kathy Schwalbe', 'Thomas Erl']);
+  addBooks('AI', ['Artificial Intelligence', 'Machine Learning', 'Deep Learning', 'Natural Language Processing', 'Computer Vision', 'Reinforcement Learning', 'Robotics'], ['Peter Norvig', 'Ian Goodfellow', 'Tom M. Mitchell', 'Richard S. Sutton', 'Christopher M. Bishop']);
+  addBooks('DS', ['Data Science', 'Data Analysis', 'Data Mining', 'Big Data Analytics', 'Statistical Learning', 'Data Visualization', 'Data Engineering'], ['Wes McKinney', 'Trevor Hastie', 'Joe Reis', 'Cole Nussbaumer Knaflic', 'Joel Grus']);
+  addBooks('Finance', ['Corporate Finance', 'Investment Analysis', 'Financial Markets', 'Portfolio Management', 'Financial Derivatives', 'International Finance', 'Behavioral Finance'], ['Brealey', 'Myers', 'Allen', 'Ross', 'Westerfield']);
+  addBooks('Accounting', ['Financial Accounting', 'Managerial Accounting', 'Cost Accounting', 'Auditing', 'Taxation', 'Accounting Information Systems', 'Forensic Accounting'], ['Weygandt', 'Kimmel', 'Kieso', 'Horngren', 'Datar']);
+  addBooks('Education', ['Educational Psychology', 'Curriculum Development', 'Instructional Design', 'Philosophy of Education', 'Educational Leadership', 'Special Education', 'Assessment and Evaluation'], ['John Dewey', 'Paulo Freire', 'Jean Piaget', 'Lev Vygotsky', 'Benjamin Bloom']);
+
+  return books;
+};
+
 export const INITIAL_BOOKS: Book[] = [
   // Computer Science
   { id: 'B001', name: 'Digital Logic Design (DLD)', author: 'M. Morris Mano', department: 'CS', status: 'Available' },
@@ -56,6 +90,7 @@ export const INITIAL_BOOKS: Book[] = [
   // Education
   { id: 'B061', name: 'Democracy and Education', author: 'John Dewey', department: 'Education', status: 'Available' },
   { id: 'B062', name: 'Pedagogy of the Oppressed', author: 'Paulo Freire', department: 'Education', status: 'Available' },
+  ...generateBooks()
 ];
 
 export const INITIAL_STUDENTS: Student[] = [
