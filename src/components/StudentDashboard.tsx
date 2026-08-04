@@ -154,9 +154,9 @@ export function StudentDashboard({ student, books, trackingRecords, returnReques
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col fixed h-full z-20">
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col md:flex-row">
+      {/* Sidebar (Desktop) */}
+      <aside className="w-64 bg-slate-900 text-slate-300 flex-col fixed h-full z-20 hidden md:flex">
         <div className="p-6">
           <div className="flex items-center gap-3 text-white mb-8">
             <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
@@ -221,8 +221,64 @@ export function StudentDashboard({ student, books, trackingRecords, returnReques
         </div>
       </aside>
 
+      {/* Mobile Navigation (Bottom Bar) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-50 flex overflow-x-auto text-slate-400">
+        <button
+          onClick={() => setActiveTab('Dashboard')}
+          className={`flex flex-col items-center justify-center min-w-[72px] flex-1 py-3 px-1 transition-all duration-200 ${
+            activeTab === 'Dashboard' ? 'text-emerald-400' : 'hover:text-slate-200'
+          }`}
+        >
+          <CheckCircle2 className="w-5 h-5 mb-1" />
+          <span className="text-[10px] font-medium whitespace-nowrap">Dashboard</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('Library')}
+          className={`flex flex-col items-center justify-center min-w-[72px] flex-1 py-3 px-1 transition-all duration-200 ${
+            activeTab === 'Library' ? 'text-emerald-400' : 'hover:text-slate-200'
+          }`}
+        >
+          <BookOpen className="w-5 h-5 mb-1" />
+          <span className="text-[10px] font-medium whitespace-nowrap">Library</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('Issued')}
+          className={`flex flex-col items-center justify-center min-w-[72px] flex-1 py-3 px-1 transition-all duration-200 ${
+            activeTab === 'Issued' ? 'text-emerald-400' : 'hover:text-slate-200'
+          }`}
+        >
+          <FileText className="w-5 h-5 mb-1" />
+          <span className="text-[10px] font-medium whitespace-nowrap">Issued</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('Profile')}
+          className={`flex flex-col items-center justify-center min-w-[72px] flex-1 py-3 px-1 transition-all duration-200 ${
+            activeTab === 'Profile' ? 'text-emerald-400' : 'hover:text-slate-200'
+          }`}
+        >
+          <User className="w-5 h-5 mb-1" />
+          <span className="text-[10px] font-medium whitespace-nowrap">Profile</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('Wishlist')}
+          className={`flex flex-col items-center justify-center min-w-[72px] flex-1 py-3 px-1 transition-all duration-200 ${
+            activeTab === 'Wishlist' ? 'text-emerald-400' : 'hover:text-slate-200'
+          }`}
+        >
+          <Heart className="w-5 h-5 mb-1" />
+          <span className="text-[10px] font-medium whitespace-nowrap">Wishlist</span>
+        </button>
+        <button
+          onClick={onLogout}
+          className="flex flex-col items-center justify-center min-w-[72px] flex-1 py-3 px-1 transition-all duration-200 text-rose-400 hover:text-rose-300"
+        >
+          <LogOut className="w-5 h-5 mb-1" />
+          <span className="text-[10px] font-medium whitespace-nowrap">Sign Out</span>
+        </button>
+      </div>
+
       {/* Main Content */}
-      <main className="flex-1 ml-64 p-8">
+      <main className="flex-1 md:ml-64 p-4 sm:p-6 md:p-8 pb-24 md:pb-8">
         
         <header className="flex justify-between items-center mb-8">
           <div>

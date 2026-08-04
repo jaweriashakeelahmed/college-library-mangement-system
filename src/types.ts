@@ -13,6 +13,7 @@ export interface Student {
   department: string;
   semester: string | number;
   phone: string;
+  email?: string;
   password?: string; // added for auth
   wishlist?: string[]; // array of book IDs
   photoUrl?: string; // profile photo

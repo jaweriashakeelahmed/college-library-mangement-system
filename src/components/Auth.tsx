@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GraduationCap, Users, Shield, ArrowLeft, Building2, AlertCircle } from 'lucide-react';
+import { GraduationCap, Users, Shield, ArrowLeft, Building2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Student, Staff, CurrentUser } from '../types';
 
 interface AuthProps {
@@ -11,7 +11,7 @@ interface AuthProps {
 }
 
 export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterStaff }: AuthProps) {
-  const [view, setView] = useState<'selection' | 'student-login' | 'student-register' | 'staff-login' | 'staff-register'>('selection');
+  const [view, setView] = useState<'selection' | 'student-login' | 'student-register' | 'staff-login' | 'staff-register' | 'student-forgot' | 'staff-forgot'>('selection');
 
   // Form states
   const [id, setId] = useState(''); // rollNo or username
@@ -23,10 +23,18 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
   const [email, setEmail] = useState('');
   
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleBack = () => {
-    setView('selection');
+    if (view === 'student-forgot') {
+      setView('student-login');
+    } else if (view === 'staff-forgot') {
+      setView('staff-login');
+    } else {
+      setView('selection');
+    }
     setError('');
+    setSuccess('');
     setId('');
     setPassword('');
     setName('');
@@ -75,11 +83,34 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
       department,
       semester: parseInt(semester),
       phone,
+      email,
       password
     };
     
     onRegisterStudent(newStudent);
     onLogin({ role: 'student', id: newStudent.id, name: newStudent.name });
+  };
+
+  const handleForgotPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (view === 'student-forgot') {
+      const student = students.find(s => s.id.toLowerCase() === id.toLowerCase() && s.email?.toLowerCase() === email.toLowerCase());
+      if (student) {
+        setSuccess(`A password reset link has been sent to ${email}`);
+      } else {
+        setError('No student found with this ID and Email combination.');
+      }
+    } else if (view === 'staff-forgot') {
+      const staff = staffs.find(s => s.id.toLowerCase() === id.toLowerCase() && s.email.toLowerCase() === email.toLowerCase());
+      if (staff) {
+        setSuccess(`A password reset link has been sent to ${email}`);
+      } else {
+        setError('No staff found with this Username and Email combination.');
+      }
+    }
   };
 
   const handleStaffRegister = (e: React.FormEvent) => {
@@ -212,9 +243,11 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
                 {view === 'student-register' && 'Student Registration'}
                 {view === 'staff-login' && 'Staff Login'}
                 {view === 'staff-register' && 'Staff Registration'}
+                {view === 'student-forgot' && 'Reset Student Password'}
+                {view === 'staff-forgot' && 'Reset Staff Password'}
               </h2>
               <p className="text-slate-500 text-sm mt-2">
-                {view.includes('login') ? 'Welcome back! Please enter your details.' : 'Create a new account to access the portal.'}
+                {view.includes('login') ? 'Welcome back! Please enter your details.' : view.includes('forgot') ? 'Enter your ID and registered email to reset password.' : 'Create a new account to access the portal.'}
               </p>
             </div>
 
@@ -225,10 +258,18 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
               </div>
             )}
 
+            {success && (
+              <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-sm flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                <p>{success}</p>
+              </div>
+            )}
+
             <form onSubmit={
               view === 'student-login' ? handleStudentLogin :
               view === 'staff-login' ? handleStaffLogin :
               view === 'student-register' ? handleStudentRegister :
+              view.includes('forgot') ? handleForgotPassword :
               handleStaffRegister
             } className="space-y-5">
               
@@ -295,16 +336,29 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
                       </select>
                     </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-semibold text-slate-700 block mb-2">Phone Number</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={phone}
-                      onChange={e => setPhone(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                      placeholder="e.g. 03001234567"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-semibold text-slate-700 block mb-2">Phone Number</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        placeholder="e.g. 03001234567"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-slate-700 block mb-2">Email Address</label>
+                      <input 
+                        type="email" 
+                        required
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        placeholder="Enter email address"
+                      />
+                    </div>
                   </div>
                 </>
               )}
@@ -323,17 +377,48 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
                 </div>
               )}
 
-              <div>
-                <label className="text-sm font-semibold text-slate-700 block mb-2">Password</label>
-                <input 
-                  type="password" 
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                  placeholder="Enter password"
-                />
-              </div>
+              {view.includes('forgot') && (
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 block mb-2">Registered Email</label>
+                  <input 
+                    type="email" 
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    placeholder="Enter registered email address"
+                  />
+                </div>
+              )}
+
+              {!view.includes('forgot') && (
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 block mb-2">Password</label>
+                  <input 
+                    type="password" 
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    placeholder="Enter password"
+                  />
+                  {view.includes('login') && (
+                    <div className="flex justify-end mt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setView(view === 'student-login' ? 'student-forgot' : 'staff-forgot');
+                          setError('');
+                          setSuccess('');
+                        }}
+                        className={`text-sm font-medium hover:underline ${view.includes('student') ? 'text-emerald-600' : 'text-blue-600'}`}
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <button 
                 type="submit"
@@ -341,7 +426,7 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
                   view.includes('student') ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
-                {view.includes('login') ? 'Sign In' : 'Create Account'}
+                {view.includes('login') ? 'Sign In' : view.includes('forgot') ? 'Reset Password' : 'Create Account'}
               </button>
 
             </form>
@@ -351,17 +436,27 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
                 <p className="text-sm text-slate-500">
                   Don't have an account?{' '}
                   <button 
-                    onClick={() => { setView(view === 'student-login' ? 'student-register' : 'staff-register'); setError(''); }}
+                    onClick={() => { setView(view === 'student-login' ? 'student-register' : 'staff-register'); setError(''); setSuccess(''); }}
                     className={`font-semibold hover:underline ${view.includes('student') ? 'text-emerald-600' : 'text-blue-600'}`}
                   >
                     Register here
+                  </button>
+                </p>
+              ) : view.includes('forgot') ? (
+                <p className="text-sm text-slate-500">
+                  Remember your password?{' '}
+                  <button 
+                    onClick={() => { setView(view === 'student-forgot' ? 'student-login' : 'staff-login'); setError(''); setSuccess(''); }}
+                    className={`font-semibold hover:underline ${view.includes('student') ? 'text-emerald-600' : 'text-blue-600'}`}
+                  >
+                    Sign in here
                   </button>
                 </p>
               ) : (
                 <p className="text-sm text-slate-500">
                   Already have an account?{' '}
                   <button 
-                    onClick={() => { setView(view === 'student-register' ? 'student-login' : 'staff-login'); setError(''); }}
+                    onClick={() => { setView(view === 'student-register' ? 'student-login' : 'staff-login'); setError(''); setSuccess(''); }}
                     className={`font-semibold hover:underline ${view.includes('student') ? 'text-emerald-600' : 'text-blue-600'}`}
                   >
                     Sign in here
