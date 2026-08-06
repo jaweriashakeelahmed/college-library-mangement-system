@@ -1,3 +1,6 @@
+import { auth, db } from '@/src/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { GraduationCap, Users, Shield, ArrowLeft, Building2, AlertCircle, CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Student, Staff, CurrentUser } from '@/src/types/index';
@@ -5,16 +8,11 @@ import { validatePassword, validateEmail, validatePhone, validateRollNumber } fr
 import { checkLockout, sendResetEmail, generateResetToken } from '@/src/services/auth/authService';
 
 interface AuthProps {
-  onLogin: (user: CurrentUser, rememberMe: boolean) => void;
   students: Student[];
   staffs: Staff[];
-  onRegisterStudent: (student: Student) => void;
-  onRegisterStaff: (staff: Staff) => void;
-  onFailedLogin: (id: string, role: 'student' | 'staff') => void;
-  onResetRequested: (id: string, role: 'student' | 'staff', token: string, expiry: string) => void;
 }
 
-export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterStaff, onFailedLogin, onResetRequested }: AuthProps) {
+export function Auth({ students, staffs }: AuthProps) {
   const [view, setView] = useState<'selection' | 'student-login' | 'student-register' | 'staff-login' | 'staff-register' | 'student-forgot' | 'staff-forgot'>('selection');
 
   // Form states
@@ -215,7 +213,7 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
       const student = students.find(s => s.id.toLowerCase() === trimmedId.toLowerCase() && s.email?.toLowerCase() === validEmail);
       if (student) {
         const { token, user } = generateResetToken(student);
-        onResetRequested(user.id, 'student', token, user.resetTokenExpiry!);
+        console.log('Reset requested');
         const sent = await sendResetEmail(validEmail, token, 'student');
         if (sent) setSuccess(`A password reset link has been sent to ${validEmail}`);
         else setError('Failed to send email. Please try again later.');
@@ -226,7 +224,7 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
       const staff = staffs.find(s => s.id.toLowerCase() === trimmedId.toLowerCase() && s.email.toLowerCase() === validEmail);
       if (staff) {
         const { token, user } = generateResetToken(staff);
-        onResetRequested(user.id, 'staff', token, user.resetTokenExpiry!);
+        console.log('Reset requested');
         const sent = await sendResetEmail(validEmail, token, 'staff');
         if (sent) setSuccess(`A password reset link has been sent to ${validEmail}`);
         else setError('Failed to send email. Please try again later.');
@@ -353,7 +351,7 @@ export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterS
             SECURE LOGIN PORTAL
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-3">
-            COLLEGE LIBRARY SYSTEM
+            LIBRARY MANAGEMENT SYSTEM
           </h1>
           <p className="text-slate-500 font-medium tracking-wide text-sm md:text-base">
             CHOOSE YOUR LOGIN PORTAL

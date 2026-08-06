@@ -1,3 +1,4 @@
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import React, { useRef, useState } from 'react';
 import { X, Save, Edit3, Image as ImageIcon, Printer, Download, CreditCard, Camera, Loader2, BookOpen, Clock, AlertCircle } from 'lucide-react';
 import { Student, IssueRecord } from '@/src/types';
@@ -46,25 +47,26 @@ export function StudentProfileModal({ student, isOpen, onClose, onSave, isStaff,
     setIsEditing(false);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isStaff) return;
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (file.size > 2 * 1024 * 1024) {
       alert("File is too large. Maximum size is 2MB.");
       return;
     }
-
     setIsUploadingPhoto(true);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setTimeout(() => {
-        setFormData({ ...formData, photoUrl: event.target?.result as string });
-        setIsUploadingPhoto(false);
-      }, 500);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const storage = getStorage();
+      const storageRef = ref(storage, `profile_photos/${student.id}_${Date.now()}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      setFormData({ ...formData, photoUrl: url });
+    } catch(err) {
+      alert("Failed to upload photo");
+    } finally {
+      setIsUploadingPhoto(false);
+    }
   };
 
   const handlePrintCard = useReactToPrint({

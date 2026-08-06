@@ -4,6 +4,8 @@ import {
   LogOut, LayoutDashboard, BookOpen, Users, BookUp, BookDown, History, Info, Activity, UserCircle, Bell, Search, GraduationCap, Home, ClipboardList, RefreshCw, Banknote, Settings
 } from 'lucide-react';
 import { Dashboard } from './Dashboard';
+import { NotificationCenter } from '@/src/components/NotificationCenter';
+import { AppNotification } from '@/src/types';
 import { Books } from './Books';
 import { Students } from './Students';
 import { IssueBook } from './IssueBook';
@@ -13,7 +15,7 @@ import { Requests } from './Requests';
 import { StaffProfile } from './components/StaffProfile';
 import { FinesDashboard } from './FinesDashboard';
 
-export type TabType = 'Home' | 'Requests' | 'Books' | 'Students' | 'Issue' | 'Return' | 'Tracking' | 'Activity' | 'Profile';
+export type TabType = 'Home' | 'Requests' | 'Books' | 'Students' | 'Issue' | 'Return' | 'Tracking' | 'Profile';
 
 interface StaffDashboardProps {
   fines: FineRecord[];
@@ -23,6 +25,7 @@ interface StaffDashboardProps {
   fineSettings: FineSettings;
   setFineSettings: React.Dispatch<React.SetStateAction<FineSettings>>;
   currentUser: CurrentUser;
+  notifications: AppNotification[];
   staffData: Staff;
   books: Book[];
   setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
@@ -56,7 +59,6 @@ export function StaffDashboard(props: StaffDashboardProps) {
     { id: 'Tracking', icon: ClipboardList, label: 'Issue History' },
     { id: 'Requests', icon: RefreshCw, label: 'Requests' },
     { id: 'Fines', icon: Banknote, label: 'Fines & Payments' },
-    { id: 'Activity', icon: Activity, label: 'Activity Logs' },
     { id: 'Profile', icon: Settings, label: 'Settings & Profile' },
   ];
   const todayDate = new Date();
@@ -102,61 +104,6 @@ export function StaffDashboard(props: StaffDashboardProps) {
     }
   }} onApprove={props.onApproveReturnRequest} onUpdateStatus={props.onUpdateRequestStatus} students={props.students} trackingRecords={props.trackingRecords} />;
       case 'Fines': return <FinesDashboard fines={props.fines} setFines={props.setFines} payments={props.payments} setPayments={props.setPayments} fineSettings={props.fineSettings} setFineSettings={props.setFineSettings} students={props.students} staffData={props.staffData} />;
-      case 'Activity': return (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <Activity className="w-6 h-6 text-blue-600" />
-              System Activity Log
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4 font-semibold">Timestamp</th>
-                  <th className="px-6 py-4 font-semibold">User ID</th>
-                  <th className="px-6 py-4 font-semibold">Role</th>
-                  <th className="px-6 py-4 font-semibold">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {props.activityLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-slate-600">
-                      {new Date(log.timestamp).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-900">{log.user}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        log.role === 'student' ? 'bg-emerald-100 text-emerald-700' :
-                        log.role === 'staff' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'
-                      }`}>
-                        {log.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`font-medium ${
-                        log.action.includes('Failed') ? 'text-rose-600' : 'text-slate-700'
-                      }`}>
-                        {log.action}
-                      </span>
-                      {log.details && <span className="text-slate-400 ml-2">({log.details})</span>}
-                    </td>
-                  </tr>
-                ))}
-                {props.activityLogs.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
-                      No activity logs found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      );
       case 'Profile': return <StaffProfile staff={props.staffData} onUpdateProfile={(updates) => {
         props.setStaffs(props.staffs.map(s => s.id === props.staffData.id ? { ...s, ...updates } : s));
       }} />;
@@ -167,7 +114,7 @@ export function StaffDashboard(props: StaffDashboardProps) {
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 font-sans">
       {/* Sidebar */}
-      <div className="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-xl shrink-0 z-20">
+      <div className="w-64 bg-white border-r border-slate-200 text-slate-600 flex flex-col shadow-xl shrink-0 z-20">
         <div className="p-6 border-b border-slate-800">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <GraduationCap className="w-6 h-6 text-blue-500" />
@@ -237,12 +184,7 @@ export function StaffDashboard(props: StaffDashboardProps) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-              <Bell className="w-5 h-5" />
-              {unreadNotifications > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
-              )}
-            </button>
+            <NotificationCenter notifications={props.notifications.filter(n => n.recipientRole === props.currentUser.role || n.recipientRole === 'staff' || n.recipientRole === 'admin' || n.recipientRole === 'librarian')} />
           </div>
         </header>
 

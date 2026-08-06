@@ -8,7 +8,7 @@ export function About() {
           <GraduationCap className="w-12 h-12 stroke-[1.5]" />
         </div>
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">College Library Management System</h2>
+          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Library Management System</h2>
           <p className="text-lg text-slate-500 mt-2 font-medium">University First Year Project</p>
         </div>
       </div>

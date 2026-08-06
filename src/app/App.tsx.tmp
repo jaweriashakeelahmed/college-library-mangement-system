@@ -1,7 +1,3 @@
-import { auth, db } from '@/src/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc, setDoc, addDoc, collection } from 'firebase/firestore';
-import { useFirestoreSync } from '@/src/hooks/useFirestoreSync';
 import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, 
@@ -16,7 +12,7 @@ import {
   Activity
 } from 'lucide-react';
 import { StaffDashboard } from '@/src/pages/Staff/StaffDashboard';
-
+import { INITIAL_BOOKS, INITIAL_STUDENTS } from '@/src/data/mockData';
 import { migrateBooksCategory } from '@/src/utils/categoryMigration';
 import { IssueRecord, Book, Student, Staff, CurrentUser, ActivityLog, ReturnRequest, BorrowRequest, FineRecord, PaymentRecord, FineSettings } from '@/src/types/index';
 import { Auth } from '@/src/pages/Authentication/Auth';
@@ -28,39 +24,18 @@ import { handleFailedAttempt, resetFailedAttempts, validateResetToken, createAct
 export type TabType = 'Home' | 'Books' | 'Students' | 'Issue' | 'Return' | 'Tracking' | 'Requests' | 'Activity' | 'About';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // Find if user is staff or student
-        // Let's first check staff collection
-        let isStaff = false;
-        try {
-          const staffDoc = await getDoc(doc(db, 'staff', user.uid));
-          if (staffDoc.exists()) {
-            isStaff = true;
-            setCurrentUser({ id: staffDoc.data().username, role: staffDoc.data().role as any });
-          } else {
-            // Must be student
-            setCurrentUser({ id: user.uid, role: 'student' });
-          }
-        } catch(e) {
-           setCurrentUser({ id: user.uid, role: 'student' });
-        }
-      } else {
-        setCurrentUser(null);
-      }
-      setAuthLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+    const { firebaseUser, activeUser, authLoading } = useFirebaseAuth();
+  // For mock compatibility, we also keep local current user if not using firebase yet
+  const [localUser, setLocalUser] = useState<CurrentUser | null>(() => {
+    const saved = localStorage.getItem('lms_current_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const activeUser = currentUser || localUser;
 
   const [activeTab, setActiveTab] = useState<TabType>('Home');
   
-  const { data: books, setData: setBooks, loading: booksLoading } = useFirestoreSync<Book>('books', []);
-  const { data: students, setData: setStudents } = useFirestoreSync<Student>('students', []);
+  const { data: books, setData: setBooks } = useFirestoreSync<Book>('books', INITIAL_BOOKS);
+  const { data: students, setData: setStudents } = useFirestoreSync<Student>('students', INITIAL_STUDENTS);
   const { data: staffs, setData: setStaffs } = useFirestoreSync<Staff>('staffs', []);
   const { data: fines, setData: setFines } = useFirestoreSync<FineRecord>('fines', []);
   const { data: payments, setData: setPayments } = useFirestoreSync<PaymentRecord>('payments', []);
@@ -96,29 +71,43 @@ export default function App() {
     setActivityLogs(prev => [newLog, ...prev]);
   };
 
-  
-
-  
-
-  
-
-  
-
-  
-  
-
-  
+  useEffect(() => {
+    localStorage.setItem('lms_books_v2', JSON.stringify(books));
+  }, [books]);
 
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('lms_current_user', JSON.stringify(currentUser));
+    localStorage.setItem('students_accounts', JSON.stringify(students));
+  }, [students]);
+
+  useEffect(() => {
+    localStorage.setItem('staff_accounts', JSON.stringify(staffs));
+  }, [staffs]);
+
+  useEffect(() => {
+    localStorage.setItem('lms_tracking', JSON.stringify(trackingRecords));
+  }, [trackingRecords]);
+
+  useEffect(() => {
+    localStorage.setItem('lms_return_requests', JSON.stringify(returnRequests));
+  }, [returnRequests]);
+  useEffect(() => {
+    localStorage.setItem('lms_borrow_requests', JSON.stringify(borrowRequests));
+  }, [borrowRequests]);
+
+  useEffect(() => {
+    localStorage.setItem('lms_activity_logs', JSON.stringify(activityLogs));
+  }, [activityLogs]);
+
+  useEffect(() => {
+    if (activeUser) {
+      localStorage.setItem('lms_current_user', JSON.stringify(activeUser));
       sessionStorage.setItem('lms_session_active', 'true');
     } else {
       localStorage.removeItem('lms_current_user');
       localStorage.removeItem('lms_remember_me');
       sessionStorage.removeItem('lms_session_active');
     }
-  }, [currentUser]);
+  }, [activeUser]);
 
   const handleLogin = (user: CurrentUser, rememberMe: boolean) => {
     setCurrentUser(user);
@@ -137,8 +126,8 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    if (currentUser) {
-      addActivityLog(currentUser.id, currentUser.role, currentUser.role === 'student' ? 'Student Logout' : 'Other', 'Staff Logout');
+    if (activeUser) {
+      addActivityLog(activeUser.id, activeUser.role, activeUser.role === 'student' ? 'Student Logout' : 'Other', 'Staff Logout');
     }
     setCurrentUser(null);
   };
@@ -203,17 +192,18 @@ export default function App() {
     }
   };
 
-  const handleToggleWishlist = async (studentId: string, bookId: string) => {
-    const s = students.find(s => s.id === studentId);
-    if (!s) return;
-    const wishlist = s.wishlist || [];
-    let newWishlist = [];
-    if (wishlist.includes(bookId)) {
-      newWishlist = wishlist.filter(id => id !== bookId);
-    } else {
-      newWishlist = [...wishlist, bookId];
-    }
-    await updateDoc(doc(db, 'students', studentId), { wishlist: newWishlist });
+  const handleToggleWishlist = (studentId: string, bookId: string) => {
+    setStudents(prev => prev.map(s => {
+      if (s.id === studentId) {
+        const wishlist = s.wishlist || [];
+        if (wishlist.includes(bookId)) {
+          return { ...s, wishlist: wishlist.filter(id => id !== bookId) };
+        } else {
+          return { ...s, wishlist: [...wishlist, bookId] };
+        }
+      }
+      return s;
+    }));
   };
 
   const handleIssueBook = (studentName: string, rollNo: string, bookId: string, bookName: string, customExpectedReturnDate?: string) => {
@@ -261,38 +251,35 @@ export default function App() {
     setTrackingRecords(prev => [newRecord, ...prev]);
   };
 
-  const handleReturnBook = async (recordId: string, returnStatus: 'Early' | 'On Time' | 'Late', lateDays: number, fine: number) => {
-    const r = trackingRecords.find(tr => tr.id === recordId);
-    if (r) {
-      const b = books.find(b => b.id === r.bookId);
-      if (b) {
-        const currentAvail = b.availableCopies ?? (b.status === 'Available' ? 1 : 0);
-        const currentIssued = b.issuedCopies || 0;
-        await updateDoc(doc(db, 'books', b.id), {
-          status: 'Available',
-          availableCopies: currentAvail + 1,
-          issuedCopies: Math.max(0, currentIssued - 1)
-        });
+  const handleReturnBook = (recordId: string, returnStatus: 'Early' | 'On Time' | 'Late', lateDays: number, fine: number) => {
+    setTrackingRecords(prev => prev.map(r => {
+      if (r.id === recordId) {
+        setBooks(books => books.map(b => {
+          if (b.id === r.bookId) {
+            const currentAvail = b.availableCopies ?? (b.status === 'Available' ? 1 : 0);
+            const currentIssued = b.issuedCopies || 0;
+            const newAvail = currentAvail + 1;
+            const newIssued = Math.max(0, currentIssued - 1);
+            return { 
+              ...b, 
+              status: 'Available',
+              availableCopies: newAvail,
+              issuedCopies: newIssued
+            };
+          }
+          return b;
+        }));
+        return {
+          ...r,
+          status: 'Returned',
+          returnDate: new Date().toISOString().split('T')[0],
+          returnStatus,
+          lateDays,
+          fine
+        };
       }
-      
-      await updateDoc(doc(db, 'trackingRecords', recordId), {
-        status: 'Returned',
-        returnDate: new Date().toISOString().split('T')[0],
-        returnStatus,
-        lateDays,
-        fine
-      });
-      
-      if (fine > 0) {
-        await addDoc(collection(db, 'fines'), {
-          studentId: r.studentId,
-          recordId: r.id,
-          amount: fine,
-          status: 'Unpaid',
-          date: new Date().toISOString()
-        });
-      }
-    }
+      return r;
+    }));
   };
 
   const handleReturnRequest = (request: Omit<ReturnRequest, 'id' | 'status' | 'requestDate'>) => {
@@ -305,16 +292,18 @@ export default function App() {
     setReturnRequests(prev => [newRequest, ...prev]);
   };
 
-  const handleApproveReturnRequest = async (requestId: string, approved: boolean) => {
-    await updateDoc(doc(db, 'returnRequests', requestId), { status: approved ? 'Approved' : 'Rejected' });
+  const handleApproveReturnRequest = (requestId: string, approved: boolean) => {
+    setReturnRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: approved ? 'Approved' : 'Rejected' } : r));
+    
     if (approved) {
       const request = returnRequests.find(r => r.id === requestId);
       if (request && request.type === 'Return Before Time') {
-        await updateDoc(doc(db, 'books', request.bookId), { status: 'Available' });
-        const record = trackingRecords.find(r => r.bookId === request.bookId && r.status === 'Issued');
-        if (record) {
-          await updateDoc(doc(db, 'trackingRecords', record.id), { status: 'Returned', returnDate: new Date().toISOString().split('T')[0] });
-        }
+        setBooks(prev => prev.map(b => b.id === request.bookId ? { ...b, status: 'Available' } : b));
+        setTrackingRecords(prev => prev.map(r => 
+          (r.bookId === request.bookId && r.status === 'Issued') 
+            ? { ...r, status: 'Returned', returnDate: new Date().toISOString().split('T')[0] } 
+            : r
+        ));
       }
     }
   };
@@ -334,27 +323,29 @@ export default function App() {
     );
   }
 
-  if (!currentUser) {
+  if (!activeUser) {
     return (
       <Auth 
-         students={students} 
-         staffs={staffs} 
+        onLogin={handleLogin} 
+        students={students} 
+        staffs={staffs} 
+        onRegisterStudent={handleRegisterStudent}
+        onRegisterStaff={handleRegisterStaff}
+        onFailedLogin={handleFailedLogin}
+        onResetRequested={handleResetRequested}
       />
     );
   }
 
-  if (currentUser.role === 'student') {
-    const studentData = students.find(s => s.id.toLowerCase() === currentUser.id.toLowerCase());
+  if (activeUser.role === 'student') {
+    const studentData = students.find(s => s.id.toLowerCase() === activeUser.id.toLowerCase());
     if (!studentData) {
       return <div className="p-8">Error loading student data. <button onClick={handleLogout}>Logout</button></div>;
-    }
-    if (booksLoading) {
-      return <div className="p-8 text-center text-slate-500">Loading library...</div>;
     }
     return (
       <>
         <SessionManager onLogout={handleLogout} isActive={true} />
-        <StudentDashboard notifications={notifications || []} 
+        <StudentDashboard 
           student={studentData} 
           books={books} 
           trackingRecords={trackingRecords} 
@@ -381,14 +372,14 @@ export default function App() {
   }
 
 
-  const staffData = staffs.find(s => s.id === currentUser.id) || staffs[0];
+  const staffData = staffs.find(s => s.id === activeUser.id) || staffs[0];
 
   return (
     <>
       <SessionManager onLogout={handleLogout} isActive={true} />
-      <StaffDashboard notifications={notifications || []} 
-          currentUser={currentUser}
-          staffData={staffs.find(s => s.id === currentUser.id)!}
+      <StaffDashboard 
+          activeUser={activeUser}
+          staffData={staffs.find(s => s.id === activeUser.id)!}
           books={books}
           setBooks={setBooks}
           students={students}

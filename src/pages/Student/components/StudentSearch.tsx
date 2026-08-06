@@ -53,7 +53,7 @@ export function StudentSearch({ books, student, onBookClick, onToggleWishlist, o
           <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
-            placeholder="Search by title, author, category, or ISBN..." 
+            placeholder="Search by title, author, category, or Book ID..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700"
@@ -96,11 +96,11 @@ export function StudentSearch({ books, student, onBookClick, onToggleWishlist, o
                     <Star className={`w-4 h-4 ${isWishlisted ? 'fill-amber-400 text-amber-400' : 'text-slate-400'}`} />
                   </button>
                   <div onClick={() => onBookClick(book)} className="cursor-pointer flex flex-col h-full">
-                    <div className="aspect-[2/3] w-full bg-slate-100 rounded-xl overflow-hidden mb-4 relative">
+                    <div className="h-40 w-full bg-slate-100 rounded-xl overflow-hidden mb-4 relative flex items-center justify-center">
                       {book.imageUrl ? (
                         <img src={book.imageUrl} alt={book.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50 font-bold text-4xl">{book.name.charAt(0)}</div>
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50 font-bold text-2xl">{book.name.split(' ').slice(0, 2).map(w => w.charAt(0)).join('')}</div>
                       )}
                       {!isAvailable && (
                         <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center backdrop-blur-[1px]">

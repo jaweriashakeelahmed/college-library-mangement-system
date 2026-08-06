@@ -43,11 +43,11 @@ export function StudentWishlist({ books, student, onBookClick, onRemoveWishlist 
                     <Trash2 className="w-4 h-4" />
                   </button>
                   <div onClick={() => onBookClick(book)} className="cursor-pointer flex flex-col h-full">
-                    <div className="aspect-[2/3] w-full bg-slate-100 rounded-xl overflow-hidden mb-4 relative">
+                    <div className="h-40 w-full bg-slate-100 rounded-xl overflow-hidden mb-4 relative">
                       {book.imageUrl ? (
                         <img src={book.imageUrl} alt={book.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50 font-bold text-4xl">{book.name.charAt(0)}</div>
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50 font-bold text-2xl">{book.name.split(' ').slice(0, 2).map(w => w.charAt(0)).join('')}</div>
                       )}
                       {!isAvailable && (
                         <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center backdrop-blur-[1px]">

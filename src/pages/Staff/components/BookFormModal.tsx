@@ -1,3 +1,4 @@
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import React, { useState, useRef } from 'react';
 import { Book } from '@/src/types';
 import { X, Camera, Upload, Save, BookOpen, AlertCircle } from 'lucide-react';
@@ -41,18 +42,22 @@ export function BookFormModal({ book, onSave, onClose }: BookFormModalProps) {
     setFormData(prev => ({ ...prev, [name]: parsedValue }));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
         alert("File size must be less than 2MB");
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, imageUrl: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        const storage = getStorage();
+        const storageRef = ref(storage, `book_covers/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        setFormData(prev => ({ ...prev, imageUrl: url }));
+      } catch(err) {
+        alert("Failed to upload book cover");
+      }
     }
   };
 

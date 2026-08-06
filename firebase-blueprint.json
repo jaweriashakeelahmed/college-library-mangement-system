@@ -1,0 +1,99 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the library (Student or Staff/Admin)",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "principal", "librarian", "head_librarian", "staff", "admin"] },
+        "name": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "enum": ["pending", "active", "suspended"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "name", "status"]
+    },
+    "StudentProfile": {
+      "title": "StudentProfile",
+      "description": "Additional data for students",
+      "type": "object",
+      "properties": {
+        "rollNumber": { "type": "string", "pattern": "^[A-Z0-9-]{1,20}$" },
+        "department": { "type": "string", "maxLength": 50 },
+        "semester": { "type": "string", "maxLength": 20 },
+        "phoneNumber": { "type": "string", "maxLength": 20 },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["rollNumber", "department", "semester"]
+    },
+    "Book": {
+      "title": "Book",
+      "description": "A book in the library",
+      "type": "object",
+      "properties": {
+        "bookId": { "type": "string", "pattern": "^B[0-9]{3,}$" },
+        "title": { "type": "string", "maxLength": 200 },
+        "author": { "type": "string", "maxLength": 100 },
+        "department": { "type": "string", "maxLength": 50 },
+        "totalCopies": { "type": "number", "minimum": 0 },
+        "issuedCopies": { "type": "number", "minimum": 0 },
+        "reservedCopies": { "type": "number", "minimum": 0 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["bookId", "title", "author", "department", "totalCopies", "issuedCopies", "reservedCopies"]
+    },
+    "IssueRecord": {
+      "title": "IssueRecord",
+      "description": "Record of a book issued to a student",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "bookId": { "type": "string" },
+        "issueDate": { "type": "string", "format": "date-time" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "returnDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["issued", "returned", "lost", "damaged"] }
+      },
+      "required": ["studentId", "bookId", "issueDate", "dueDate", "status"]
+    },
+    "BookRequest": {
+      "title": "BookRequest",
+      "description": "A student's request to borrow or return a book",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "bookId": { "type": "string" },
+        "type": { "type": "string", "enum": ["borrow", "return"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "completed"] },
+        "requestDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "bookId", "type", "status", "requestDate"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Core user accounts"
+    },
+    "/users/{userId}/profile/student": {
+      "schema": "StudentProfile",
+      "description": "Student specific data"
+    },
+    "/books/{bookId}": {
+      "schema": "Book",
+      "description": "Library books inventory"
+    },
+    "/bookIssues/{issueId}": {
+      "schema": "IssueRecord",
+      "description": "Active and past book issues"
+    },
+    "/bookRequests/{requestId}": {
+      "schema": "BookRequest",
+      "description": "Pending requests for borrow/return"
+    }
+  }
+}

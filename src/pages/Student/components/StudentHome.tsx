@@ -57,7 +57,7 @@ export function StudentHome({ student, books, records, onNavigate, onBookClick }
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight mb-1">Welcome back, {student.name.split(' ')[0]}!</h1>
             <p className="text-blue-100 font-medium flex items-center gap-2">
-              <span className="bg-blue-900/40 px-2 py-0.5 rounded text-sm">{student.membershipNumber || 'LIB-PENDING'}</span>
+              <span className="bg-blue-900/40 px-2 py-0.5 rounded text-sm">{student.membershipNumber}</span>
               <span>{student.department} • Semester {student.semester}</span>
             </p>
           </div>
@@ -151,11 +151,11 @@ export function StudentHome({ student, books, records, onNavigate, onBookClick }
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {recommendations.map(book => (
                 <div key={book.id} onClick={() => onBookClick(book)} className="bg-white rounded-xl border border-slate-200 p-3 shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                  <div className="aspect-[2/3] w-full bg-slate-100 rounded-lg overflow-hidden mb-3">
+                  <div className="h-40 w-full bg-slate-100 rounded-lg overflow-hidden mb-3">
                     {book.imageUrl ? (
                       <img src={book.imageUrl} alt={book.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50 font-bold text-3xl">{book.name.charAt(0)}</div>
+                      <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50 font-bold text-2xl">{book.name.split(' ').slice(0, 2).map(w => w.charAt(0)).join('')}</div>
                     )}
                   </div>
                   <h4 className="font-bold text-slate-900 text-sm leading-tight line-clamp-2" title={book.name}>{book.name}</h4>
@@ -203,34 +203,6 @@ export function StudentHome({ student, books, records, onNavigate, onBookClick }
             </div>
           </div>
 
-          {/* Reading Stats Widget */}
-          <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-4 opacity-10">
-               <TrendingUp className="w-24 h-24" />
-             </div>
-             <h3 className="font-bold text-slate-200 mb-6 flex items-center gap-2 relative z-10"><Activity className="w-5 h-5"/> Reading Stats</h3>
-             
-             <div className="space-y-4 relative z-10">
-               <div>
-                 <div className="flex justify-between text-sm mb-1">
-                   <span className="text-slate-400">Total Borrowed</span>
-                   <span className="font-bold">{records.length}</span>
-                 </div>
-                 <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                   <div className="h-full bg-blue-500 rounded-full" style={{ width: '100%' }}></div>
-                 </div>
-               </div>
-               <div>
-                 <div className="flex justify-between text-sm mb-1">
-                   <span className="text-slate-400">Returned on Time</span>
-                   <span className="font-bold">{records.filter(r => r.status === 'Returned' && (r.lateDays || 0) === 0).length}</span>
-                 </div>
-                 <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                   <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(records.filter(r => r.status === 'Returned' && (r.lateDays || 0) === 0).length / (records.length || 1)) * 100}%` }}></div>
-                 </div>
-               </div>
-             </div>
-          </div>
 
         </div>
       </div>

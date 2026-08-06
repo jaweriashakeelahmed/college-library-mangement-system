@@ -1,3 +1,5 @@
+import { db } from '@/src/firebase';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import React, { useState, useMemo, useRef } from 'react';
 import { 
   Search, Plus, Trash2, Edit, X, BookOpen, Download, Upload, 
@@ -94,156 +96,13 @@ export function Students({ students, setStudents, trackingRecords }: StudentsPro
     showToast('Student added successfully.');
   };
 
-  const handleDelete = (id: string) => {
-    setStudents(prev => prev.filter(s => s.id !== id));
-    setDeleteConfirmId(null);
-    showToast('Student removed successfully.');
-  };
-
-  const handleUpdateStudent = (updated: Student) => {
-    setStudents(prev => prev.map(s => s.id === updated.id ? updated : s));
-    showToast('Profile updated successfully.');
-  };
-
-  // EXPORT FUNCTIONS
-  const exportToCSV = () => {
-    const data = students.map(s => ({
-      'Student ID': s.id,
-      'Name': s.name,
-      'Department': s.department,
-      'Semester': s.semester,
-      'Phone': s.phone,
-      'Email': s.email || '',
-      'Status': s.accountStatus || 'Active',
-      'Membership No': s.membershipNumber || ''
-    }));
-    const csv = Papa.unparse(data);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'students_export.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Student Records", 14, 15);
-    
-    const tableData = students.map(s => [
-      s.id,
-      s.name,
-      s.department,
-      s.semester.toString(),
-      s.accountStatus || 'Active',
-      s.membershipNumber || '-'
-    ]);
-
-    autoTable(doc, {
-      head: [['ID / Roll No', 'Name', 'Department', 'Semester', 'Status', 'Mem No']],
-      body: tableData,
-      startY: 20,
-    });
-
-    doc.save('students_export.pdf');
-  };
-
-  // IMPORT FUNCTION
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    Papa.parse(file, {
-      header: true,
-      complete: (results) => {
-        let addedCount = 0;
-        let skippedCount = 0;
-        
-        const newStudents: Student[] = [];
-        
-        results.data.forEach((row: any) => {
-          const id = row['Student ID'] || row['id'];
-          const name = row['Name'] || row['name'];
-          
-          if (!id || !name) return; // skip invalid rows
-          
-          // Check duplicates in existing + new array
-          if (students.some(s => s.id === id) || newStudents.some(s => s.id === id)) {
-            skippedCount++;
-            return;
-          }
-
-          newStudents.push({
-            id,
-            name,
-            department: row['Department'] || row['department'] || 'CS',
-            semester: parseInt(row['Semester'] || row['semester']) || 1,
-            phone: row['Phone'] || row['phone'] || '',
-            email: row['Email'] || row['email'] || '',
-            accountStatus: row['Status'] || row['status'] || 'Active',
-            membershipNumber: row['Membership No'] || row['membershipNumber'] || undefined,
-            createdDate: new Date().toISOString()
-          });
-          addedCount++;
-        });
-
-        if (newStudents.length > 0) {
-          setStudents(prev => [...newStudents, ...prev]);
-        }
-        
-        showToast(`Imported ${addedCount} students. Skipped ${skippedCount} duplicates.`, 'success');
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      }
-    });
-  };
-
-  // FILTER & SORT
-  const filteredStudents = useMemo(() => {
-    let result = students;
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(s => 
-        s.name.toLowerCase().includes(q) ||
-        s.id.toLowerCase().includes(q) ||
-        s.email?.toLowerCase().includes(q) ||
-        s.phone.includes(q) ||
-        s.department.toLowerCase().includes(q) ||
-        s.membershipNumber?.toLowerCase().includes(q)
-      );
-    }
-
-    if (filterDept) {
-      result = result.filter(s => s.department === filterDept);
-    }
-
-    if (filterStatus) {
-      result = result.filter(s => (s.accountStatus || 'Active') === filterStatus);
-    }
-
-    result.sort((a, b) => {
-      let aVal = a[sortBy] || '';
-      let bVal = b[sortBy] || '';
-      
-      if (typeof aVal === 'string') aVal = aVal.toString().toLowerCase();
-      if (typeof bVal === 'string') bVal = bVal.toString().toLowerCase();
-
-      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    return result;
-  }, [students, searchQuery, filterDept, filterStatus, sortBy, sortOrder]);
-
-  const toggleSort = (field: typeof sortBy) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'students', id));
+      setStudents(prev => prev.filter(s => s.id !== id));
+      setDeleteConfirmId(null);
+    } catch (e) {
+      console.error("Error deleting student", e);
     }
   };
 
@@ -365,6 +224,7 @@ export function Students({ students, setStudents, trackingRecords }: StudentsPro
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none">
             <option value="">All Status</option>
             <option value="Active">Active</option>
+<option value="Pending">Pending</option>
             <option value="Inactive">Inactive</option>
             <option value="Suspended">Suspended</option>
             <option value="Graduated">Graduated</option>
@@ -455,6 +315,20 @@ export function Students({ students, setStudents, trackingRecords }: StudentsPro
                         </div>
                       ) : (
                         <div className="flex items-center justify-end gap-2">
+                          {(student.accountStatus === 'Pending') && (
+                            <>
+                              <button onClick={async () => {
+                                await updateDoc(doc(db, 'students', student.id), { accountStatus: 'Active' });
+                              }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve">
+                                <CheckCircle2 className="w-5 h-5" />
+                              </button>
+                              <button onClick={async () => {
+                                await updateDoc(doc(db, 'students', student.id), { accountStatus: 'Rejected' });
+                              }} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Reject">
+                                <X className="w-5 h-5" />
+                              </button>
+                            </>
+                          )}
                           <button onClick={() => setSelectedStudent(student)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View/Edit Profile">
                             <Eye className="w-5 h-5" />
                           </button>

@@ -19,11 +19,14 @@ import { StudentHistory } from './components/StudentHistory';
 import { StudentRequests } from './components/StudentRequests';
 import { StudentProfileTab } from './components/StudentProfileTab';
 import { StudentBookDetails } from './components/StudentBookDetails';
-import { StudentFinesTab } from './components/StudentFinesTab';
+
 import { BorrowValidationService } from '@/src/services/borrowing/BorrowValidationService';
+import { NotificationCenter } from '@/src/components/NotificationCenter';
+import { AppNotification } from '@/src/types';
 
 interface StudentDashboardProps {
   fines: FineRecord[];
+  notifications: AppNotification[];
   payments: PaymentRecord[];
   student: Student;
   books: Book[];
@@ -50,7 +53,7 @@ export function StudentDashboard({
   onToggleWishlist,
   onReturnRequest,
   onUpdateProfile
-, fines}: StudentDashboardProps) {
+, fines, notifications }: StudentDashboardProps) {
   const [activeTab, setActiveTab] = useState('Home');
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
@@ -93,7 +96,6 @@ export function StudentDashboard({
     { name: 'Wishlist', icon: Star },
     { name: 'History', icon: Clock },
     { name: 'Requests', icon: Activity },
-    { name: 'Fines', icon: Banknote },
     { name: 'Profile', icon: UserCircle },
   ];
 
@@ -172,9 +174,18 @@ export function StudentDashboard({
         </div>
       </div>
 
+      
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Top Header */}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 lg:px-8">
+           <h2 className="text-xl font-bold text-slate-800 hidden sm:block">Library Management System</h2>
+           <div className="flex items-center gap-4">
+              <NotificationCenter notifications={notifications.filter(n => n.recipientId === student.id)} />
+           </div>
+        </header>
         <main className="flex-1 p-6 md:p-8 overflow-y-auto bg-slate-50/50">
+
           <div className="max-w-7xl mx-auto h-full">
             {renderContent()}
           </div>
