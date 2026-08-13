@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { User, Phone, Mail, MapPin, Edit3, Key, Shield, AlertTriangle, Upload, Trash2 } from 'lucide-react';
 import { Student } from '@/src/types';
 import { LibraryCard } from '../../Staff/components/LibraryCard';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface StudentProfileTabProps {
   student: Student;
@@ -12,6 +14,25 @@ interface StudentProfileTabProps {
 export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }: StudentProfileTabProps) {
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const idCardRef = useRef<HTMLDivElement>(null);
+  const [showPhotoMenu, setShowPhotoMenu] = useState(false);
+
+  const downloadIDCard = async () => {
+    if (!idCardRef.current) return;
+    try {
+      const canvas = await html2canvas(idCardRef.current, { scale: 2, backgroundColor: null });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save(`${student.id}_library_card.pdf`);
+    } catch (err) {
+      console.error('Failed to download PDF', err);
+    }
+  };
 
   const [formData, setFormData] = useState({
     phone: student.phone || '',
@@ -119,8 +140,17 @@ export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }
                )}
              </div>
 
-             <div className="w-full mb-6 flex justify-center scale-75 origin-top h-[180px]">
-                <LibraryCard student={student} />
+             <div className="w-full mb-2 flex flex-col items-center">
+               <div className="scale-75 origin-top h-[180px]" ref={idCardRef}>
+                  <LibraryCard student={student} />
+               </div>
+               <button
+                 type="button"
+                 onClick={downloadIDCard}
+                 className="mt-2 text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline transition-colors"
+               >
+                 Download ID Card (PDF)
+               </button>
              </div>
              
              <div className="w-full border-t border-slate-100 pt-4 space-y-3">

@@ -46,6 +46,14 @@ export class BorrowValidationService {
       return { isValid: false, reason: 'You already have an active request for this book.' };
     }
 
+    // 6. Max Books Limit (3)
+    const activeIssueCount = activeIssues.filter(i => i.studentId === student.id && (i.status === 'Issued' || i.status === 'Overdue')).length;
+    const activeRequestCount = borrowRequests.filter(r => r.studentId === student.id && activeStatuses.includes(r.status)).length;
+    
+    if (activeIssueCount + activeRequestCount >= 3) {
+      return { isValid: false, reason: 'You have reached the maximum limit of 3 books (issued + requested).' };
+    }
+
     return { isValid: true };
   }
 }

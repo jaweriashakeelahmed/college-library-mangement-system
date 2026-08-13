@@ -44,9 +44,6 @@ export function Dashboard({ books, students, trackingRecords, returnRequests, on
     { label: 'Books Issued Today', value: issuedToday, icon: BookUp, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', tab: 'Issue' },
     { label: 'Books Returned Today', value: returnedToday, icon: BookDown, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', tab: 'Return' },
     { label: 'Pending Returns', value: pendingReturns, icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', tab: 'Requests' },
-    { label: 'Pending Exchanges', value: pendingExchanges, icon: RefreshCw, color: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-100', tab: 'Requests' },
-    { label: 'Pending Reservations', value: pendingReservations, icon: Calendar, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100', tab: 'Requests' },
-    { label: 'Active Reservations', value: activeReservations, icon: BookMarked, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-100', tab: 'Requests' },
     { label: 'Overdue Books', value: overdueRecords.length, icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', tab: 'Tracking' },
     { label: 'Fine Collection', value: `Rs. ${currentFines}`, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', tab: 'Tracking' },
   ];
@@ -115,27 +112,8 @@ export function Dashboard({ books, students, trackingRecords, returnRequests, on
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         
-        {/* Main Chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200/60 p-6 flex flex-col">
-          <h3 className="text-lg font-bold text-slate-800 mb-6">Circulation Trends (Last 7 Days)</h3>
-          <div className="flex-1 min-h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={circulationData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                <RechartsTooltip 
-                  contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-                <Line type="monotone" dataKey="Issues" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                <Line type="monotone" dataKey="Returns" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
         {/* Quick Actions & Alerts */}
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6">
@@ -186,61 +164,6 @@ export function Dashboard({ books, students, trackingRecords, returnRequests, on
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-         <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6 lg:col-span-2">
-          <h3 className="text-lg font-bold text-slate-800 mb-6">Popular Books</h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topBooksData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} width={150} />
-                <RechartsTooltip 
-                  cursor={{fill: '#f8fafc'}}
-                  contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-                <Bar dataKey="Issues" radius={[0, 4, 4, 0]} barSize={24}>
-                  {topBooksData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6">
-          <h3 className="text-lg font-bold text-slate-800 mb-4">Students by Department</h3>
-          <div className="h-64 w-full flex items-center justify-center">
-            {deptData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={deptData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {deptData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip 
-                     contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-sm text-slate-500">No data available.</p>
-            )}
           </div>
         </div>
       </div>

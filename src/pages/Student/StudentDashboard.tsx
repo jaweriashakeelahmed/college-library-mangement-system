@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Book, ReturnRequest, BorrowRequest, Student, IssueRecord, FineRecord, PaymentRecord } from '@/src/types';
 import { 
   LogOut, 
@@ -60,6 +60,20 @@ export function StudentDashboard({
   const studentRecords = trackingRecords.filter(r => r.studentId === student.id);
   const studentRequests = returnRequests.filter(r => r.studentId === student.id);
   
+  useEffect(() => {
+    // Simulate email notification for overdue books
+    const today = new Date();
+    const overdueBooks = studentRecords.filter(r => r.status === 'Issued' && new Date(r.expectedReturnDate) < today);
+    if (overdueBooks.length > 0) {
+      const alreadyNotified = sessionStorage.getItem(`overdue_notified_${student.id}`);
+      if (!alreadyNotified) {
+        console.log(`[SIMULATED EMAIL] To: ${student.email || student.id} - You have ${overdueBooks.length} overdue books. Please return them immediately.`);
+        alert(`[Simulated Email] You have ${overdueBooks.length} overdue book(s). Please check your account!`);
+        sessionStorage.setItem(`overdue_notified_${student.id}`, 'true');
+      }
+    }
+  }, [studentRecords, student.id]);
+
   const handleRequestBorrow = (bookId: string) => {
     const book = books.find(b => b.id === bookId);
     if (!book) return;

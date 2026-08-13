@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Star, BookOpen, Clock, Hash, Tag, User, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Star, BookOpen, Clock, Hash, Tag, User, MapPin, CheckCircle } from 'lucide-react';
 import { Book, Student } from '@/src/types';
 
 interface StudentBookDetailsProps {
@@ -11,6 +11,7 @@ interface StudentBookDetailsProps {
 }
 
 export function StudentBookDetails({ book, student, onClose, onToggleWishlist, onRequestBorrow }: StudentBookDetailsProps) {
+  const [showSuccess, setShowSuccess] = useState(false);
   const isWishlisted = student.wishlist?.includes(book.id);
   const isAvailable = (book.availableCopies ?? (book.status === "Available" ? 1 : 0)) > 0;
 
@@ -20,13 +21,11 @@ export function StudentBookDetails({ book, student, onClose, onToggleWishlist, o
         <button onClick={onClose} className="absolute top-6 right-6 z-10 p-2 bg-white/50 backdrop-blur-md rounded-full shadow-sm hover:bg-slate-100 transition-colors text-slate-500">
           <X className="w-6 h-6" />
         </button>
-
         <div className="flex flex-col h-full max-h-[85vh]">
           
-          <div className="w-full p-8 md:p-10 flex flex-col overflow-y-auto bg-white">
+          <div className="w-full p-8 md:p-10 flex flex-col overflow-y-auto bg-white relative">
             <div className="flex items-center gap-2 mb-4">
-               
-               {isAvailable ? (
+              {isAvailable ? (
                   <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                     Available ({book.availableCopies ?? (book.status === "Available" ? 1 : 0)})
                   </span>
@@ -38,12 +37,12 @@ export function StudentBookDetails({ book, student, onClose, onToggleWishlist, o
 
             <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-8">
               <div>
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mb-1"><Hash className="w-3.5 h-3.5" /> ISBN</div>
-                <div className="font-semibold text-slate-800">{book.isbn13}</div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mb-1"><Hash className="w-3.5 h-3.5" /> Book ID</div>
+                <div className="font-semibold text-slate-800">{book.id}</div>
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mb-1"><MapPin className="w-3.5 h-3.5" /> Location</div>
-                <div className="font-semibold text-slate-800">Rack {book.rackNumber}</div>
+                <div className="font-semibold text-slate-800">Shelf {book.shelfNumber || '1'}</div>
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mb-1"><Tag className="w-3.5 h-3.5" /> Department</div>
@@ -75,8 +74,10 @@ export function StudentBookDetails({ book, student, onClose, onToggleWishlist, o
                 <button 
                   onClick={() => { 
                     onRequestBorrow(book.id); 
-                    alert('Request sent to admin');
-                    onClose(); 
+                    setShowSuccess(true);
+                    setTimeout(() => {
+                      onClose(); 
+                    }, 2000);
                   }}
                   className="flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-bold transition-all bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
                 >
@@ -84,8 +85,16 @@ export function StudentBookDetails({ book, student, onClose, onToggleWishlist, o
                   Request Book
                 </button>
               )}
-
             </div>
+
+            {showSuccess && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-50 rounded-3xl">
+                <div className="bg-emerald-100 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-in zoom-in-95 fade-in duration-200">
+                  <CheckCircle className="w-6 h-6 text-emerald-600" />
+                  <span className="font-bold text-lg">Request sent to admin</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
