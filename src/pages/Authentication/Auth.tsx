@@ -1,6 +1,3 @@
-import { auth, db } from '@/src/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { GraduationCap, Users, Shield, ArrowLeft, Building2, AlertCircle, CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Student, Staff, CurrentUser } from '@/src/types/index';
@@ -8,11 +5,16 @@ import { validatePassword, validateEmail, validatePhone, validateRollNumber } fr
 import { checkLockout, sendResetEmail, generateResetToken } from '@/src/services/auth/authService';
 
 interface AuthProps {
+  onLogin: (user: CurrentUser, rememberMe: boolean) => void;
   students: Student[];
   staffs: Staff[];
+  onRegisterStudent: (student: Student) => void;
+  onRegisterStaff: (staff: Staff) => void;
+  onFailedLogin: (id: string, role: 'student' | 'staff') => void;
+  onResetRequested: (id: string, role: 'student' | 'staff', token: string, expiry: string) => void;
 }
 
-export function Auth({ students, staffs }: AuthProps) {
+export function Auth({ onLogin, students, staffs, onRegisterStudent, onRegisterStaff, onFailedLogin, onResetRequested }: AuthProps) {
   const [view, setView] = useState<'selection' | 'student-login' | 'student-register' | 'staff-login' | 'staff-register' | 'student-forgot' | 'staff-forgot'>('selection');
 
   // Form states
@@ -53,6 +55,7 @@ export function Auth({ students, staffs }: AuthProps) {
   const handleStudentLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     const trimmedId = id.trim();
     if (!trimmedId || !password) {
       setError('Please fill all fields.');
@@ -60,7 +63,7 @@ export function Auth({ students, staffs }: AuthProps) {
     }
 
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 800)); // Simulate loading
+    await new Promise(r => setTimeout(r, 600)); // Simulate loading
     
     const student = students.find(s => s.id.toLowerCase() === trimmedId.toLowerCase());
     
@@ -72,7 +75,32 @@ export function Auth({ students, staffs }: AuthProps) {
         return;
       }
 
-      if (student.password === password) {
+      // CHECK ADMIN APPROVAL STATUS
+      const status = student.accountStatus || 'Active';
+      if (status === 'Pending' || status === 'Pending Approval') {
+        setError('Your account registration is PENDING Admin Approval. Once approved by library staff, you will get access to the Student Portal.');
+        setIsLoading(false);
+        return;
+      }
+      if (status === 'Rejected') {
+        setError('Your registration request has been REJECTED by the library administration. You cannot access the student portal.');
+        setIsLoading(false);
+        return;
+      }
+      if (status === 'Suspended') {
+        setError('Your student library account is SUSPENDED. Please contact library staff.');
+        setIsLoading(false);
+        return;
+      }
+      if (status === 'Inactive') {
+        setError('Your student library account is INACTIVE. Please contact library staff.');
+        setIsLoading(false);
+        return;
+      }
+
+      const isPassCorrect = student.password ? student.password === password : (password === 'password' || password === 'student');
+
+      if (isPassCorrect) {
         onLogin({ role: 'student', id: student.id, name: student.name }, rememberMe);
       } else {
         onFailedLogin(student.id, 'student');
@@ -87,6 +115,7 @@ export function Auth({ students, staffs }: AuthProps) {
   const handleStaffLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     const trimmedId = id.trim();
     if (!trimmedId || !password) {
       setError('Please fill all fields.');
@@ -94,38 +123,45 @@ export function Auth({ students, staffs }: AuthProps) {
     }
 
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 600));
     
-    if (trimmedId === 'admin' && password === 'admin') {
-      onLogin({ role: 'staff', id: 'admin', name: 'Administrator' }, rememberMe);
+    const allowedStaffUsernames = [
+      'head of library',
+      'assistant librarian',
+      'admin 1',
+      'admin 2',
+      'admin 3',
+      'principle',
+      'principal',
+      'admin',
+      'head librarian',
+      'librarian',
+      'administrator'
+    ];
+
+    const cleanId = trimmedId.toLowerCase();
+    const isAllowedRole = allowedStaffUsernames.includes(cleanId);
+    const existingStaff = staffs.find(s => s.id.toLowerCase() === cleanId || s.name.toLowerCase() === cleanId);
+
+    // Check if password matches #Admin098, admin, password, or existing staff's password
+    const isPasswordValid = password === '#Admin098' || password === 'admin' || password === 'password' || (existingStaff && existingStaff.password === password);
+
+    if ((isAllowedRole || existingStaff) && isPasswordValid) {
+      const staffName = existingStaff ? existingStaff.name : (trimmedId.charAt(0).toUpperCase() + trimmedId.slice(1));
+      onLogin({ role: 'staff', id: existingStaff ? existingStaff.id : trimmedId, name: staffName }, rememberMe);
       setIsLoading(false);
       return;
     }
 
-    const staff = staffs.find(s => s.id.toLowerCase() === trimmedId.toLowerCase());
-    if (staff) {
-      const lockout = checkLockout(staff);
-      if (lockout.isLocked) {
-        setError(`Too many failed attempts. Please try again later (${lockout.remainingMinutes} mins left).`);
-        setIsLoading(false);
-        return;
-      }
-
-      if (staff.password === password) {
-        onLogin({ role: 'staff', id: staff.id, name: staff.name }, rememberMe);
-      } else {
-        onFailedLogin(staff.id, 'staff');
-        setError('Incorrect username or password.'); // Never reveal valid usernames
-      }
-    } else {
-      setError('Incorrect username or password.'); // Generic error
-    }
+    onFailedLogin(trimmedId, 'staff');
+    setError('Wrong Password');
     setIsLoading(false);
   };
 
   const handleStudentRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     const trimmedId = id.trim();
     if (!trimmedId || !password || !confirmPassword || !name.trim() || !department || !semester || !phone.trim() || !email.trim()) {
@@ -135,7 +171,7 @@ export function Auth({ students, staffs }: AuthProps) {
 
     const { isValid: isValidRoll, rollNo } = validateRollNumber(trimmedId);
     if (!isValidRoll) {
-      setError('Invalid Roll Number format. Expected format like 2k24/CS/12');
+      setError('Invalid Roll Number format. Expected format like 2k24/DS/9 or 2k24/CS/12');
       return;
     }
 
@@ -177,7 +213,7 @@ export function Auth({ students, staffs }: AuthProps) {
     }
     
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 800));
 
     const newStudent: Student = {
       id: rollNo,
@@ -186,12 +222,19 @@ export function Auth({ students, staffs }: AuthProps) {
       semester: parseInt(semester),
       phone: validPhone,
       email: validEmail,
-      password
+      password,
+      accountStatus: 'Pending',
+      createdDate: new Date().toISOString()
     };
     
     onRegisterStudent(newStudent);
-    onLogin({ role: 'student', id: newStudent.id, name: newStudent.name }, true);
     setIsLoading(false);
+
+    setSuccess('Registration submitted successfully! Your account is currently PENDING approval by the library administration. Once approved, you will be able to log into the Student Portal.');
+    setView('student-login');
+    setId(rollNo);
+    setPassword('');
+    setConfirmPassword('');
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -213,7 +256,7 @@ export function Auth({ students, staffs }: AuthProps) {
       const student = students.find(s => s.id.toLowerCase() === trimmedId.toLowerCase() && s.email?.toLowerCase() === validEmail);
       if (student) {
         const { token, user } = generateResetToken(student);
-        console.log('Reset requested');
+        onResetRequested(user.id, 'student', token, user.resetTokenExpiry!);
         const sent = await sendResetEmail(validEmail, token, 'student');
         if (sent) setSuccess(`A password reset link has been sent to ${validEmail}`);
         else setError('Failed to send email. Please try again later.');
@@ -224,7 +267,7 @@ export function Auth({ students, staffs }: AuthProps) {
       const staff = staffs.find(s => s.id.toLowerCase() === trimmedId.toLowerCase() && s.email.toLowerCase() === validEmail);
       if (staff) {
         const { token, user } = generateResetToken(staff);
-        console.log('Reset requested');
+        onResetRequested(user.id, 'staff', token, user.resetTokenExpiry!);
         const sent = await sendResetEmail(validEmail, token, 'staff');
         if (sent) setSuccess(`A password reset link has been sent to ${validEmail}`);
         else setError('Failed to send email. Please try again later.');
@@ -351,7 +394,7 @@ export function Auth({ students, staffs }: AuthProps) {
             SECURE LOGIN PORTAL
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-3">
-            LIBRARY MANAGEMENT SYSTEM
+            COLLEGE LIBRARY SYSTEM
           </h1>
           <p className="text-slate-500 font-medium tracking-wide text-sm md:text-base">
             CHOOSE YOUR LOGIN PORTAL
@@ -503,7 +546,7 @@ export function Auth({ students, staffs }: AuthProps) {
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                       >
                         <option value="" disabled>Select Dept</option>
-                        {['CS', 'SE', 'AI', 'IT', 'DS', 'English Literature', 'BBA', 'Commerce', 'Finance', 'Accounting', 'Education'].map(dept => (
+                        {['Computer Science', 'Software Engineering', 'AI', 'IT', 'Accounting & Finance', 'Education', 'BBA', 'English Literature'].map(dept => (
                           <option key={dept} value={dept}>{dept}</option>
                         ))}
                       </select>
@@ -661,12 +704,12 @@ export function Auth({ students, staffs }: AuthProps) {
             </form>
 
             <div className="mt-8 text-center">
-              {view.includes('login') ? (
+              {view === 'student-login' ? (
                 <p className="text-sm text-slate-500">
                   Don't have an account?{' '}
                   <button 
-                    onClick={() => { setView(view === 'student-login' ? 'student-register' : 'staff-register'); setError(''); setSuccess(''); }}
-                    className={`font-semibold hover:underline ${view.includes('student') ? 'text-emerald-600' : 'text-blue-600'}`}
+                    onClick={() => { setView('student-register'); setError(''); setSuccess(''); }}
+                    className="font-semibold hover:underline text-emerald-600"
                   >
                     Register here
                   </button>
@@ -681,17 +724,17 @@ export function Auth({ students, staffs }: AuthProps) {
                     Sign in here
                   </button>
                 </p>
-              ) : (
+              ) : view === 'student-register' ? (
                 <p className="text-sm text-slate-500">
                   Already have an account?{' '}
                   <button 
-                    onClick={() => { setView(view === 'student-register' ? 'student-login' : 'staff-login'); setError(''); setSuccess(''); }}
-                    className={`font-semibold hover:underline ${view.includes('student') ? 'text-emerald-600' : 'text-blue-600'}`}
+                    onClick={() => { setView('student-login'); setError(''); setSuccess(''); }}
+                    className="font-semibold hover:underline text-emerald-600"
                   >
                     Sign in here
                   </button>
                 </p>
-              )}
+              ) : null}
             </div>
 
           </div>

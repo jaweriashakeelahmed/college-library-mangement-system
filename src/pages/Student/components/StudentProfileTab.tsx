@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, Phone, Mail, MapPin, Edit3, Key, Shield, AlertTriangle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { User, Phone, Mail, MapPin, Edit3, Key, Shield, AlertTriangle, Upload, Trash2 } from 'lucide-react';
 import { Student } from '@/src/types';
 import { LibraryCard } from '../../Staff/components/LibraryCard';
 
@@ -11,6 +11,8 @@ interface StudentProfileTabProps {
 
 export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }: StudentProfileTabProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     phone: student.phone || '',
     address: student.address || '',
@@ -30,6 +32,23 @@ export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }
     setIsEditing(false);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("File size should be less than 5MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          onUpdateProfile({ photoUrl: reader.result });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError('');
@@ -42,7 +61,6 @@ export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }
     
     onChangePassword(passwordForm.current, passwordForm.next);
     
-    // In a real app we'd wait for success, simulating here
     setPasswordSuccess(true);
     setPasswordForm({ current: '', next: '', confirm: '' });
     setTimeout(() => setPasswordSuccess(false), 3000);
@@ -52,13 +70,55 @@ export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }
     <div className="space-y-6 h-full flex flex-col">
       <div>
         <h2 className="text-2xl font-bold text-slate-800">My Profile</h2>
-        <p className="text-slate-500 mt-1">Manage your account settings and view your digital library card.</p>
+        <p className="text-slate-500 mt-1">Manage your account settings, update profile picture, and view your digital library card.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-y-auto pb-8">
-        {/* Left Col: Digital Card & Info */}
+        {/* Left Col: Photo, Digital Card & Info */}
         <div className="lg:col-span-1 space-y-6">
            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center">
+             
+             {/* Profile Photo Avatar Display */}
+             <div className="relative w-28 h-28 rounded-full overflow-hidden bg-indigo-50 border-4 border-indigo-100 shadow-md mb-4 flex items-center justify-center shrink-0">
+               {student.photoUrl ? (
+                 <img src={student.photoUrl} alt={student.name} className="w-full h-full object-cover" />
+               ) : (
+                 <span className="text-3xl font-black text-indigo-600">{student.name.charAt(0)}</span>
+               )}
+             </div>
+
+             {/* Photo Management Buttons */}
+             <div className="flex flex-wrap gap-2 justify-center mb-6 w-full">
+               <input 
+                 type="file" 
+                 ref={fileInputRef} 
+                 accept="image/*" 
+                 className="hidden" 
+                 onChange={handleFileUpload} 
+               />
+               
+               <button 
+                 type="button" 
+                 onClick={() => fileInputRef.current?.click()}
+                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm"
+               >
+                 <Upload className="w-4 h-4" />
+                 Upload Photo
+               </button>
+
+               {student.photoUrl && (
+                 <button 
+                   type="button" 
+                   onClick={() => onUpdateProfile({ photoUrl: '' })}
+                   className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 border border-rose-200"
+                   title="Remove Photo"
+                 >
+                   <Trash2 className="w-3.5 h-3.5" />
+                   Remove
+                 </button>
+               )}
+             </div>
+
              <div className="w-full mb-6 flex justify-center scale-75 origin-top h-[180px]">
                 <LibraryCard student={student} />
              </div>
@@ -72,15 +132,11 @@ export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }
                </div>
                <div className="flex justify-between text-sm">
                  <span className="text-slate-500 font-medium">Max Books</span>
-                 <span className="font-bold text-slate-800">{student.accountStatus}</span>
+                 <span className="font-bold text-slate-800">3</span>
                </div>
                <div className="flex justify-between text-sm">
                  <span className="text-slate-500 font-medium">Joined</span>
-                 <span className="font-bold text-slate-800">{student.createdDate}</span>
-               </div>
-               <div className="flex justify-between text-sm">
-                 <span className="text-slate-500 font-medium">Valid Until</span>
-                 <span className="font-bold text-slate-800">{student.updatedDate}</span>
+                 <span className="font-bold text-slate-800">{student.createdDate ? new Date(student.createdDate).toLocaleDateString() : 'N/A'}</span>
                </div>
              </div>
            </div>
@@ -97,7 +153,7 @@ export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }
                      required
                      value={passwordForm.current}
                      onChange={e => setPasswordForm(f => ({ ...f, current: e.target.value }))}
-                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
+                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" 
                    />
                  </div>
                </div>
@@ -108,7 +164,7 @@ export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }
                    required
                    value={passwordForm.next}
                    onChange={e => setPasswordForm(f => ({ ...f, next: e.target.value }))}
-                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
+                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" 
                  />
                </div>
                <div>
@@ -118,7 +174,7 @@ export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }
                    required
                    value={passwordForm.confirm}
                    onChange={e => setPasswordForm(f => ({ ...f, confirm: e.target.value }))}
-                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
+                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" 
                  />
                </div>
                {passwordError && (
@@ -138,7 +194,7 @@ export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><User className="w-5 h-5 text-slate-400" /> Personal Information</h3>
               {!isEditing && (
-                <button onClick={() => setIsEditing(true)} className="text-blue-600 hover:text-blue-700 text-sm font-bold flex items-center gap-1">
+                <button onClick={() => setIsEditing(true)} className="text-indigo-600 hover:text-blue-700 text-sm font-bold flex items-center gap-1">
                   <Edit3 className="w-4 h-4" /> Edit Contact Info
                 </button>
               )}
@@ -153,7 +209,7 @@ export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }
                       type="text" 
                       value={formData.phone}
                       onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" 
                     />
                   </div>
                   <div>
@@ -166,13 +222,13 @@ export function StudentProfileTab({ student, onUpdateProfile, onChangePassword }
                       value={formData.address}
                       onChange={e => setFormData(f => ({ ...f, address: e.target.value }))}
                       rows={3}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" 
                     ></textarea>
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors text-sm">Cancel</button>
-                  <button type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm text-sm">Save Changes</button>
+                  <button type="submit" className="px-6 py-2 bg-indigo-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm text-sm">Save Changes</button>
                 </div>
               </form>
             ) : (

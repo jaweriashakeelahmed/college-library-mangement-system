@@ -19,10 +19,7 @@ interface BooksProps {
 
 export function Books({ books, setBooks, trackingRecords = [] }: BooksProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [sortBy, setSortBy] = useState('name-asc');
   
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -41,8 +38,7 @@ export function Books({ books, setBooks, trackingRecords = [] }: BooksProps) {
   const damagedCopies = books.reduce((acc, b) => acc + (b.damagedCopies || (b.status === 'Damaged' ? 1 : 0)), 0);
   const lowStockCount = books.filter(b => (b.availableCopies ?? (b.status === 'Available' ? 1 : 0)) < 2).length;
 
-  const departments = useMemo(() => Array.from(new Set(books.map(b => b.department))), [books]);
-  const categories = useMemo(() => Array.from(new Set(books.map(b => b.category).filter(Boolean))), [books]);
+  const categories = ['Computer Science', 'Software Engineering', 'AI', 'IT', 'Accounting & Finance', 'Education', 'BBA', 'English Literature'];
   const statuses = useMemo(() => Array.from(new Set(books.map(b => b.status))), [books]);
 
   // Filtering & Sorting
@@ -55,37 +51,23 @@ export function Books({ books, setBooks, trackingRecords = [] }: BooksProps) {
         (book.isbn13 && book.isbn13.includes(searchQuery)) ||
         (book.publisher && book.publisher.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      const matchesDept = departmentFilter === 'All' || book.department === departmentFilter;
-      const matchesCat = categoryFilter === 'All' || book.category === categoryFilter;
-      const matchesStatus = statusFilter === 'All' || book.status === statusFilter;
+      const matchesCategory = categoryFilter === 'All' || (book.category || book.department) === categoryFilter;
 
-      return matchesSearch && matchesDept && matchesCat && matchesStatus;
-    }).sort((a, b) => {
-      const [field, dir] = sortBy.split('-');
-      const valA = a[field as keyof Book];
-      const valB = b[field as keyof Book];
-      
-      if (valA === undefined) return dir === 'asc' ? 1 : -1;
-      if (valB === undefined) return dir === 'asc' ? -1 : 1;
-
-      if (valA < valB) return dir === 'asc' ? -1 : 1;
-      if (valA > valB) return dir === 'asc' ? 1 : -1;
-      return 0;
+      return matchesSearch && matchesCategory;
     });
-  }, [books, searchQuery, departmentFilter, categoryFilter, statusFilter, sortBy]);
+  }, [books, searchQuery, categoryFilter]);
 
   const totalPages = Math.ceil(filteredBooks.length / itemsPerPage);
   const paginatedBooks = filteredBooks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const handleSaveBook = (bookData: Omit<Book, 'id'> | Book) => {
-    if ('id' in bookData) {
+  const handleSaveBook = (bookData: Book) => {
+    if (selectedBookForEdit) {
       // Edit
-      setBooks(prev => prev.map(b => b.id === bookData.id ? { ...b, ...bookData } as Book : b));
+      setBooks(prev => prev.map(b => b.id === bookData.id ? bookData : b));
     } else {
       // Add
       const newBook: Book = {
         ...bookData,
-        id: `B${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
         createdDate: new Date().toISOString(),
       };
       setBooks(prev => [...prev, newBook]);
@@ -106,7 +88,7 @@ export function Books({ books, setBooks, trackingRecords = [] }: BooksProps) {
     const csvContent = "data:text/csv;charset=utf-8," 
       + headers.join(",") + "\n"
       + filteredBooks.map(b => 
-          [b.id, `"${b.name}"`, `"${b.author}"`, b.department, b.category || '', b.status, b.totalCopies || 1, b.availableCopies ?? (b.status === 'Available' ? 1 : 0)].join(",")
+          [b.id, `"${b.name}"`, `"${b.author}"`, b.category || b.department, b.status, b.totalCopies || 1, b.availableCopies ?? (b.status === 'Available' ? 1 : 0)].join(",")
         ).join("\n");
     
     const encodedUri = encodeURI(csvContent);
@@ -128,7 +110,7 @@ export function Books({ books, setBooks, trackingRecords = [] }: BooksProps) {
       b.id,
       b.name,
       b.author,
-      b.department,
+      b.category || b.department,
       b.status,
       b.totalCopies || 1,
       b.availableCopies ?? (b.status === 'Available' ? 1 : 0)
@@ -185,20 +167,6 @@ export function Books({ books, setBooks, trackingRecords = [] }: BooksProps) {
           <span className="text-xs font-bold text-blue-600 uppercase">Reserved</span>
           <span className="text-xl font-black text-blue-700">{reservedCopies}</span>
         </div>
-        <div className="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-sm flex flex-col justify-center">
-          <span className="text-xs font-bold text-slate-400 uppercase">Lost</span>
-          <span className="text-xl font-black text-white">{lostCopies}</span>
-        </div>
-        <div className="bg-orange-50 p-3 rounded-xl border border-orange-100 shadow-sm flex flex-col justify-center">
-          <span className="text-xs font-bold text-orange-600 uppercase">Damaged</span>
-          <span className="text-xl font-black text-orange-700">{damagedCopies}</span>
-        </div>
-        <div className="bg-purple-50 p-3 rounded-xl border border-purple-100 shadow-sm flex flex-col justify-center col-span-2 relative overflow-hidden">
-          <div className="relative z-10">
-            <span className="text-xs font-bold text-purple-600 uppercase flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> Low Stock Alerts</span>
-            <span className="text-xl font-black text-purple-700">{lowStockCount} Titles</span>
-          </div>
-        </div>
       </div>
 
       {/* Toolbar */}
@@ -209,7 +177,7 @@ export function Books({ books, setBooks, trackingRecords = [] }: BooksProps) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input 
               type="text" 
-              placeholder="Search title, ISBN, author..."
+              placeholder="Search Book ID Title"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
@@ -217,31 +185,9 @@ export function Books({ books, setBooks, trackingRecords = [] }: BooksProps) {
           </div>
           
           <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
-            <select value={departmentFilter} onChange={e => setDepartmentFilter(e.target.value)} className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
-              <option value="All">All Departments</option>
-              {departments.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-            
             <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
               <option value="All">All Categories</option>
-              {categories.map(c => <option key={String(c)} value={String(c)}>{c}</option>)}
-            </select>
-
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
-              <option value="All">All Statuses</option>
-              {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
-              <option value="name-asc">Title (A-Z)</option>
-              <option value="name-desc">Title (Z-A)</option>
-              <option value="isbn13-asc">ISBN</option>
-              <option value="author-asc">Author (A-Z)</option>
-              <option value="publisher-asc">Publisher (A-Z)</option>
-              <option value="totalCopies-desc">Copies (High-Low)</option>
-              <option value="availableCopies-desc">Availability (High-Low)</option>
-              <option value="createdDate-desc">Newest First</option>
-              <option value="createdDate-asc">Oldest First</option>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
         </div>
@@ -272,8 +218,8 @@ export function Books({ books, setBooks, trackingRecords = [] }: BooksProps) {
             <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4 font-semibold">Book Info</th>
-                <th className="px-6 py-4 font-semibold">Classification</th>
-                <th className="px-6 py-4 font-semibold">Stock</th>
+                <th className="px-6 py-4 font-semibold">Category</th>
+                <th className="px-6 py-4 font-semibold">Copies</th>
                 <th className="px-6 py-4 font-semibold">Status</th>
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
@@ -283,35 +229,22 @@ export function Books({ books, setBooks, trackingRecords = [] }: BooksProps) {
                 <tr key={book.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-16 bg-slate-100 rounded-md border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                        {book.imageUrl ? (
-                          <img src={book.imageUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <BookOpen className="w-5 h-5 text-slate-400" />
-                        )}
+                      <div className="w-10 h-10 bg-slate-100 rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                        <BookOpen className="w-5 h-5 text-slate-400" />
                       </div>
                       <div>
                         <div className="font-bold text-slate-900 line-clamp-1 cursor-pointer hover:text-blue-600" onClick={() => setSelectedBookForDetails(book)}>{book.name}</div>
                         <div className="text-xs text-slate-500 line-clamp-1">{book.author}</div>
-                        <div className="text-[10px] font-mono text-slate-400 mt-0.5">ID: {book.id} {book.isbn13 ? `| ISBN: ${book.isbn13}` : ''}</div>
+                        <div className="text-[10px] font-mono text-slate-400 mt-0.5">ID: {book.id}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="font-medium text-slate-800">{book.department}</div>
-                    <div className="text-xs text-slate-500">{book.category || '-'}</div>
+                    <div className="font-medium text-slate-800">{book.category || book.department}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="text-center">
-                        <div className="text-xs font-bold text-slate-400 uppercase">Total</div>
-                        <div className="font-semibold text-slate-800">{book.totalCopies || 1}</div>
-                      </div>
-                      <div className="w-px h-6 bg-slate-200"></div>
-                      <div className="text-center">
-                        <div className="text-xs font-bold text-emerald-500 uppercase">Avail</div>
-                        <div className="font-semibold text-emerald-700">{book.availableCopies ?? (book.status === 'Available' ? 1 : 0)}</div>
-                      </div>
+                    <div className="text-center w-12">
+                      <div className="font-semibold text-slate-800 text-lg">{book.totalCopies || 1}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4">

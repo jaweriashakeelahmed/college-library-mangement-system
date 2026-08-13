@@ -6,7 +6,8 @@ export class BorrowValidationService {
     book: Book,
     activeIssues: IssueRecord[],
     pendingFines: FineRecord[],
-    fineSettings: FineSettings
+    fineSettings: FineSettings,
+    borrowRequests: import('../../types').BorrowRequest[] = []
   ): { isValid: boolean; reason?: string } {
     // 1. Account Status
     if (student.accountStatus !== 'Active') {
@@ -31,6 +32,18 @@ export class BorrowValidationService {
     const overdueBooks = activeIssues.filter(i => i.studentId === student.id && i.status === 'Overdue');
     if (overdueBooks.length > 0) {
       return { isValid: false, reason: 'You have overdue books. Please return them before borrowing new ones.' };
+    }
+
+    // 5. Existing Requests or Issues
+    const hasActiveIssue = activeIssues.some(i => i.studentId === student.id && i.bookId === book.id && (i.status === 'Issued' || i.status === 'Overdue'));
+    if (hasActiveIssue) {
+      return { isValid: false, reason: 'You already have a copy of this book issued.' };
+    }
+    
+    const activeStatuses = ['Pending', 'Under Review', 'Approved'];
+    const hasActiveRequest = borrowRequests.some(r => r.studentId === student.id && r.bookId === book.id && activeStatuses.includes(r.status));
+    if (hasActiveRequest) {
+      return { isValid: false, reason: 'You already have an active request for this book.' };
     }
 
     return { isValid: true };

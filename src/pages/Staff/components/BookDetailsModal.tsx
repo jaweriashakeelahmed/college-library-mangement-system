@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Book, IssueRecord } from '@/src/types';
 import { QRCodeCanvas } from 'qrcode.react';
 import Barcode from 'react-barcode';
-import { X, QrCode, Printer, MapPin, Tag, Calendar, Download, Edit } from 'lucide-react';
+import { X, QrCode, Printer, MapPin, Tag, Calendar, Download, Edit, BookOpen } from 'lucide-react';
 
 interface BookDetailsModalProps {
   book: Book;
@@ -93,12 +93,8 @@ export function BookDetailsModal({ book, trackingRecords, onClose, onEdit }: Boo
             
             {/* Left Col: Visuals & Labels */}
             <div className="space-y-6">
-              <div className="aspect-[3/4] bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden shadow-inner flex items-center justify-center relative group">
-                {book.imageUrl ? (
-                  <img src={book.imageUrl} alt={book.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-slate-400 font-medium">No Cover Available</div>
-                )}
+              <div className="aspect-square w-48 mx-auto bg-slate-100 rounded-2xl border border-slate-200 shadow-inner flex items-center justify-center text-slate-400">
+                <BookOpen className="w-16 h-16" />
               </div>
 
               {/* Barcode & QR Label */}
@@ -172,24 +168,8 @@ export function BookDetailsModal({ book, trackingRecords, onClose, onEdit }: Boo
                     <Tag className="w-4 h-4 text-slate-400" /> Classification
                   </h3>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm"><span className="text-slate-500">Department:</span> <span className="font-semibold text-slate-800">{book.department}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-slate-500">Category:</span> <span className="font-semibold text-slate-800">{book.category || '-'}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-slate-500">Category:</span> <span className="font-semibold text-slate-800">{book.category || book.department}</span></div>
                     <div className="flex justify-between text-sm"><span className="text-slate-500">Subject:</span> <span className="font-semibold text-slate-800">{book.subject || '-'}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-slate-500">ISBN-13:</span> <span className="font-mono text-slate-800">{book.isbn13 || '-'}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-slate-500">Accession No:</span> <span className="font-mono text-slate-800">{book.accessionNumber || '-'}</span></div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
-                    <MapPin className="w-4 h-4 text-slate-400" /> Location & Publication
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm"><span className="text-slate-500">Floor:</span> <span className="font-semibold text-slate-800">{book.floor || '-'}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-slate-500">Rack / Shelf:</span> <span className="font-semibold text-slate-800">{book.rackNumber || '-'} / {book.shelfNumber || '-'}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-slate-500">Publisher:</span> <span className="font-semibold text-slate-800">{book.publisher || '-'}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-slate-500">Edition / Year:</span> <span className="font-semibold text-slate-800">{book.edition || '-'} {book.publicationYear ? `(${book.publicationYear})` : ''}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-slate-500">Price:</span> <span className="font-semibold text-slate-800">{book.price ? `Rs. ${book.price}` : '-'}</span></div>
                   </div>
                 </div>
               </div>

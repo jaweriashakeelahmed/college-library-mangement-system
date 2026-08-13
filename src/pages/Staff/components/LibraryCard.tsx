@@ -66,10 +66,6 @@ export const LibraryCard = forwardRef<HTMLDivElement, LibraryCardProps>(({ stude
                   <td className="font-bold truncate pb-1">{student.program || 'N/A'}</td>
                 </tr>
                 <tr>
-                  <td className="text-slate-500 font-semibold pb-1">Mem No:</td>
-                  <td className="font-bold font-mono text-blue-700 truncate pb-1">{student.membershipNumber || 'PENDING'}</td>
-                </tr>
-                <tr>
                   <td className="text-slate-500 font-semibold pb-0.5">Valid:</td>
                   <td className="font-bold text-xs text-slate-800 pb-0.5">{issueDate} &rarr; {expiryStr}</td>
                 </tr>

@@ -1,5 +1,3 @@
-import { db } from '@/src/firebase';
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import React, { useState, useMemo, useRef } from 'react';
 import { 
   Search, Plus, Trash2, Edit, X, BookOpen, Download, Upload, 
@@ -96,15 +94,187 @@ export function Students({ students, setStudents, trackingRecords }: StudentsPro
     showToast('Student added successfully.');
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'students', id));
-      setStudents(prev => prev.filter(s => s.id !== id));
-      setDeleteConfirmId(null);
-    } catch (e) {
-      console.error("Error deleting student", e);
+  const handleDelete = (id: string) => {
+    setStudents(prev => prev.filter(s => s.id !== id));
+    setDeleteConfirmId(null);
+    showToast('Student removed successfully.');
+  };
+
+  const handleUpdateStudent = (updated: Student) => {
+    setStudents(prev => prev.map(s => s.id === updated.id ? updated : s));
+    showToast('Profile updated successfully.');
+  };
+
+  const handleApproveStudent = (studentId: string) => {
+    setStudents(prev => prev.map(s => {
+      if (s.id === studentId) {
+        return {
+          ...s,
+          accountStatus: 'Active',
+          membershipNumber: s.membershipNumber || `MEM-2026-${s.id.replace(/[^a-zA-Z0-9]/g, '')}`
+        };
+      }
+      return s;
+    }));
+    showToast('Student account APPROVED successfully! Portal access granted.', 'success');
+  };
+
+  const handleRejectStudent = (studentId: string) => {
+    setStudents(prev => prev.map(s => {
+      if (s.id === studentId) {
+        return {
+          ...s,
+          accountStatus: 'Rejected'
+        };
+      }
+      return s;
+    }));
+    showToast('Student registration REJECTED. Portal access denied.', 'error');
+  };
+
+  // EXPORT FUNCTIONS
+  const exportToCSV = () => {
+    const data = students.map(s => ({
+      'Student ID': s.id,
+      'Name': s.name,
+      'Department': s.department,
+      'Semester': s.semester,
+      'Phone': s.phone,
+      'Email': s.email || '',
+      'Status': s.accountStatus || 'Active',
+      'Membership No': s.membershipNumber || ''
+    }));
+    const csv = Papa.unparse(data);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'students_export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Student Records", 14, 15);
+    
+    const tableData = students.map(s => [
+      s.id,
+      s.name,
+      s.department,
+      s.semester.toString(),
+      s.accountStatus || 'Active',
+      s.membershipNumber || '-'
+    ]);
+
+    autoTable(doc, {
+      head: [['ID / Roll No', 'Name', 'Department', 'Semester', 'Status', 'Mem No']],
+      body: tableData,
+      startY: 20,
+    });
+
+    doc.save('students_export.pdf');
+  };
+
+  // IMPORT FUNCTION
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      complete: (results) => {
+        let addedCount = 0;
+        let skippedCount = 0;
+        
+        const newStudents: Student[] = [];
+        
+        results.data.forEach((row: any) => {
+          const id = row['Student ID'] || row['id'];
+          const name = row['Name'] || row['name'];
+          
+          if (!id || !name) return; // skip invalid rows
+          
+          // Check duplicates in existing + new array
+          if (students.some(s => s.id === id) || newStudents.some(s => s.id === id)) {
+            skippedCount++;
+            return;
+          }
+
+          newStudents.push({
+            id,
+            name,
+            department: row['Department'] || row['department'] || 'CS',
+            semester: parseInt(row['Semester'] || row['semester']) || 1,
+            phone: row['Phone'] || row['phone'] || '',
+            email: row['Email'] || row['email'] || '',
+            accountStatus: row['Status'] || row['status'] || 'Active',
+            membershipNumber: row['Membership No'] || row['membershipNumber'] || undefined,
+            createdDate: new Date().toISOString()
+          });
+          addedCount++;
+        });
+
+        if (newStudents.length > 0) {
+          setStudents(prev => [...newStudents, ...prev]);
+        }
+        
+        showToast(`Imported ${addedCount} students. Skipped ${skippedCount} duplicates.`, 'success');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    });
+  };
+
+  // FILTER & SORT
+  const filteredStudents = useMemo(() => {
+    let result = students;
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(s => 
+        s.name.toLowerCase().includes(q) ||
+        s.id.toLowerCase().includes(q) ||
+        s.email?.toLowerCase().includes(q) ||
+        s.phone.includes(q) ||
+        s.department.toLowerCase().includes(q) ||
+        s.membershipNumber?.toLowerCase().includes(q)
+      );
+    }
+
+    if (filterDept) {
+      result = result.filter(s => s.department === filterDept);
+    }
+
+    if (filterStatus) {
+      result = result.filter(s => (s.accountStatus || 'Active') === filterStatus);
+    }
+
+    result.sort((a, b) => {
+      let aVal = a[sortBy] || '';
+      let bVal = b[sortBy] || '';
+      
+      if (typeof aVal === 'string') aVal = aVal.toString().toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toString().toLowerCase();
+
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [students, searchQuery, filterDept, filterStatus, sortBy, sortOrder]);
+
+  const toggleSort = (field: typeof sortBy) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
     }
   };
+
+  const pendingCount = useMemo(() => students.filter(s => s.accountStatus === 'Pending' || s.accountStatus === 'Pending Approval').length, [students]);
 
   // PAGINATION
   const totalPages = Math.ceil(filteredStudents.length / limit);
@@ -118,6 +288,27 @@ export function Students({ students, setStudents, trackingRecords }: StudentsPro
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-top-2 ${toast.type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}>
           {toast.type === 'error' ? <AlertCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
           <span className="font-medium">{toast.message}</span>
+        </div>
+      )}
+
+      {/* PENDING APPROVAL BANNER */}
+      {pendingCount > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-500 text-white rounded-xl font-bold text-sm">
+              {pendingCount}
+            </div>
+            <div>
+              <h4 className="font-bold text-amber-900 text-sm">Pending Student Registration Requests</h4>
+              <p className="text-xs text-amber-700">There {pendingCount === 1 ? 'is' : 'are'} {pendingCount} student registration {pendingCount === 1 ? 'request' : 'requests'} waiting for admin approval.</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setFilterStatus('Pending')} 
+            className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+          >
+            Filter Pending Requests
+          </button>
         </div>
       )}
 
@@ -179,11 +370,14 @@ export function Students({ students, setStudents, trackingRecords }: StudentsPro
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700 block">Department</label>
               <select name="department" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="CS">Computer Science (CS)</option>
-                <option value="IT">Information Technology (IT)</option>
-                <option value="SE">Software Engineering (SE)</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Software Engineering">Software Engineering</option>
                 <option value="AI">Artificial Intelligence (AI)</option>
-                <option value="DS">Data Science (DS)</option>
+                <option value="IT">Information Technology (IT)</option>
+                <option value="Accounting & Finance">Accounting & Finance</option>
+                <option value="Education">Education</option>
+                <option value="BBA">BBA</option>
+                <option value="English Literature">English Literature</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -224,7 +418,8 @@ export function Students({ students, setStudents, trackingRecords }: StudentsPro
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none">
             <option value="">All Status</option>
             <option value="Active">Active</option>
-<option value="Pending">Pending</option>
+            <option value="Pending">Pending Approval</option>
+            <option value="Rejected">Rejected</option>
             <option value="Inactive">Inactive</option>
             <option value="Suspended">Suspended</option>
             <option value="Graduated">Graduated</option>
@@ -259,9 +454,6 @@ export function Students({ students, setStudents, trackingRecords }: StudentsPro
                   <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-bold text-slate-900">{student.id}</div>
-                      {student.membershipNumber && (
-                         <div className="text-[10px] font-mono text-blue-600 mt-1 bg-blue-50 px-2 py-0.5 rounded inline-block">{student.membershipNumber}</div>
-                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -299,6 +491,8 @@ export function Students({ students, setStudents, trackingRecords }: StudentsPro
                     <td className="px-6 py-4 text-center">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                         (student.accountStatus || 'Active') === 'Active' ? 'bg-emerald-100 text-emerald-700' :
+                        student.accountStatus === 'Pending' || student.accountStatus === 'Pending Approval' ? 'bg-amber-100 text-amber-800 border border-amber-300 font-extrabold animate-pulse' :
+                        student.accountStatus === 'Rejected' ? 'bg-rose-100 text-rose-800' :
                         student.accountStatus === 'Suspended' ? 'bg-rose-100 text-rose-700' :
                         student.accountStatus === 'Graduated' ? 'bg-blue-100 text-blue-700' :
                         'bg-slate-100 text-slate-700'
@@ -315,17 +509,21 @@ export function Students({ students, setStudents, trackingRecords }: StudentsPro
                         </div>
                       ) : (
                         <div className="flex items-center justify-end gap-2">
-                          {(student.accountStatus === 'Pending') && (
+                          {(student.accountStatus === 'Pending' || student.accountStatus === 'Pending Approval') && (
                             <>
-                              <button onClick={async () => {
-                                await updateDoc(doc(db, 'students', student.id), { accountStatus: 'Active' });
-                              }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Approve">
-                                <CheckCircle2 className="w-5 h-5" />
+                              <button 
+                                onClick={() => handleApproveStudent(student.id)} 
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95"
+                                title="Approve Student Registration"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Approve
                               </button>
-                              <button onClick={async () => {
-                                await updateDoc(doc(db, 'students', student.id), { accountStatus: 'Rejected' });
-                              }} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Reject">
-                                <X className="w-5 h-5" />
+                              <button 
+                                onClick={() => handleRejectStudent(student.id)} 
+                                className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95"
+                                title="Reject Student Registration"
+                              >
+                                <X className="w-3.5 h-3.5" /> Reject
                               </button>
                             </>
                           )}

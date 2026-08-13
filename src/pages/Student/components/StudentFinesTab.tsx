@@ -53,7 +53,7 @@ export function StudentFinesTab({ student, fines, payments }: StudentFinesTabPro
           <button
             onClick={() => setActiveTab('Fines')}
             className={`flex-1 py-4 text-center font-semibold text-sm transition-colors border-b-2 ${
-              activeTab === 'Fines' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              activeTab === 'Fines' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
             }`}
           >
             Fine Records
@@ -61,7 +61,7 @@ export function StudentFinesTab({ student, fines, payments }: StudentFinesTabPro
           <button
             onClick={() => setActiveTab('Payments')}
             className={`flex-1 py-4 text-center font-semibold text-sm transition-colors border-b-2 ${
-              activeTab === 'Payments' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              activeTab === 'Payments' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
             }`}
           >
             Payment History
@@ -130,7 +130,7 @@ export function StudentFinesTab({ student, fines, payments }: StudentFinesTabPro
                   <tr key={payment.id} className="hover:bg-slate-50/50">
                     <td className="px-6 py-4 font-medium text-slate-900">{payment.receiptNumber}</td>
                     <td className="px-6 py-4 text-slate-500">{new Date(payment.date).toLocaleString()}</td>
-                    <td className="px-6 py-4 text-blue-600 font-medium">{payment.fineId}</td>
+                    <td className="px-6 py-4 text-indigo-600 font-medium">{payment.fineId}</td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
                         <CreditCard className="w-3.5 h-3.5" /> {payment.method}

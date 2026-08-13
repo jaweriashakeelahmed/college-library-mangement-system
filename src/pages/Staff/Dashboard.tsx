@@ -3,6 +3,10 @@ import { Book, Student, IssueRecord, ReturnRequest } from '@/src/types';
 import { 
   BookOpen, Users, BookUp, BookDown, AlertCircle, Clock, Search, BookMarked, RefreshCw, Calendar, TrendingUp, ShieldCheck
 } from 'lucide-react';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie
+} from 'recharts';
+
 interface DashboardProps {
   books: Book[];
   students: Student[];
@@ -111,33 +115,28 @@ export function Dashboard({ books, students, trackingRecords, returnRequests, on
         })}
       </div>
 
-      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
+        {/* Main Chart */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200/60 p-6 flex flex-col">
-          <h3 className="text-lg font-bold text-slate-800 mb-6">Recent Borrow Requests</h3>
-          <div className="flex-1 overflow-auto">
-            {returnRequests.slice(0, 5).length > 0 ? (
-              <div className="space-y-4">
-                {returnRequests.slice(0, 5).map(req => (
-                  <div key={req.id} className="flex justify-between items-center p-4 border border-slate-100 rounded-lg bg-slate-50">
-                    <div>
-                      <p className="font-semibold text-slate-800">{req.bookName}</p>
-                      <p className="text-sm text-slate-500">{req.studentName} - {new Date(req.requestDate).toLocaleDateString()}</p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${req.status === 'Pending' ? 'bg-amber-100 text-amber-700' : req.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
-                      {req.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-               <p className="text-sm text-slate-500">No recent borrow requests.</p>
-            )}
+          <h3 className="text-lg font-bold text-slate-800 mb-6">Circulation Trends (Last 7 Days)</h3>
+          <div className="flex-1 min-h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={circulationData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                <RechartsTooltip 
+                  contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Line type="monotone" dataKey="Issues" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="Returns" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions & Alerts */}
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-4">Quick Actions</h3>
@@ -156,52 +155,95 @@ export function Dashboard({ books, students, trackingRecords, returnRequests, on
               </button>
             </div>
           </div>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-         <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6">
-          <h3 className="text-lg font-bold text-slate-800 mb-6">Recent Issues</h3>
-          <div className="space-y-4">
-             {trackingRecords.filter(r => r.status === 'Issued').slice(0, 5).map(record => (
-                <div key={record.id} className="flex justify-between items-center p-4 border border-slate-100 rounded-lg bg-slate-50">
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">System Alerts</h3>
+            <div className="space-y-3">
+              {overdueRecords.length > 0 ? (
+                <div className="bg-rose-50 border border-rose-100 text-rose-800 p-3 rounded-lg flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-slate-800">{record.bookName}</p>
-                    <p className="text-sm text-slate-500">{record.studentName}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-slate-700">{new Date(record.issueDate).toLocaleDateString()}</p>
-                    <p className="text-xs text-slate-500">Issue Date</p>
+                    <h4 className="font-semibold text-sm">{overdueRecords.length} Books Overdue</h4>
+                    <p className="text-xs mt-0.5 opacity-90">Please collect fines for late returns.</p>
                   </div>
                 </div>
-             ))}
-             {trackingRecords.filter(r => r.status === 'Issued').length === 0 && (
-                <p className="text-sm text-slate-500">No active issues.</p>
-             )}
+              ) : (
+                <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 p-3 rounded-lg flex items-start gap-3">
+                  <BookMarked className="w-5 h-5 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm">No Overdue Books</h4>
+                    <p className="text-xs mt-0.5 opacity-90">All issued books are within periods.</p>
+                  </div>
+                </div>
+              )}
+              {(pendingReturns > 0 || pendingExchanges > 0) && (
+                <div className="bg-amber-50 border border-amber-100 text-amber-800 p-3 rounded-lg flex items-start gap-3">
+                  <Clock className="w-5 h-5 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm">{pendingReturns + pendingExchanges + pendingRenewals + pendingReservations} Pending Requests</h4>
+                    <p className="text-xs mt-0.5 opacity-90">Please review pending returns, exchanges, renewals, and reservations.</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Bottom Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6 lg:col-span-2">
+          <h3 className="text-lg font-bold text-slate-800 mb-6">Popular Books</h3>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topBooksData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} width={150} />
+                <RechartsTooltip 
+                  cursor={{fill: '#f8fafc'}}
+                  contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Bar dataKey="Issues" radius={[0, 4, 4, 0]} barSize={24}>
+                  {topBooksData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6">
-          <h3 className="text-lg font-bold text-slate-800 mb-6">Recent Returns</h3>
-          <div className="space-y-4">
-             {trackingRecords.filter(r => r.status === 'Returned').slice(0, 5).map(record => (
-                <div key={record.id} className="flex justify-between items-center p-4 border border-slate-100 rounded-lg bg-slate-50">
-                  <div>
-                    <p className="font-semibold text-slate-800">{record.bookName}</p>
-                    <p className="text-sm text-slate-500">{record.studentName}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-slate-700">{record.returnDate ? new Date(record.returnDate).toLocaleDateString() : 'N/A'}</p>
-                    <p className="text-xs text-slate-500">Return Date</p>
-                  </div>
-                </div>
-             ))}
-             {trackingRecords.filter(r => r.status === 'Returned').length === 0 && (
-                <p className="text-sm text-slate-500">No recent returns.</p>
-             )}
+          <h3 className="text-lg font-bold text-slate-800 mb-4">Students by Department</h3>
+          <div className="h-64 w-full flex items-center justify-center">
+            {deptData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={deptData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {deptData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                     contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-slate-500">No data available.</p>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 }
-

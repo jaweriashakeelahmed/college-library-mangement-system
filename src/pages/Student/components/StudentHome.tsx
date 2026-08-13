@@ -44,7 +44,7 @@ export function StudentHome({ student, books, records, onNavigate, onBookClick }
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-800 to-blue-600 rounded-3xl p-8 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-blue-100 to-indigo-50 rounded-3xl p-8 text-blue-900 shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="relative z-10 flex items-center gap-6">
           <div className="w-24 h-24 rounded-full bg-white/20 border-4 border-white/30 overflow-hidden flex items-center justify-center shrink-0 shadow-xl backdrop-blur-sm">
@@ -56,8 +56,7 @@ export function StudentHome({ student, books, records, onNavigate, onBookClick }
           </div>
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight mb-1">Welcome back, {student.name.split(' ')[0]}!</h1>
-            <p className="text-blue-100 font-medium flex items-center gap-2">
-              <span className="bg-blue-900/40 px-2 py-0.5 rounded text-sm">{student.membershipNumber}</span>
+            <p className="text-blue-700 font-medium flex items-center gap-2">
               <span>{student.department} • Semester {student.semester}</span>
             </p>
           </div>
@@ -65,11 +64,11 @@ export function StudentHome({ student, books, records, onNavigate, onBookClick }
         <div className="relative z-10 flex gap-4 w-full md:w-auto">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex-1 md:w-32 text-center border border-white/10">
             <div className="text-3xl font-black">{currentBorrowed.length}</div>
-            <div className="text-xs font-semibold text-blue-100 uppercase tracking-wider mt-1">Borrowed</div>
+            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wider mt-1">Borrowed</div>
           </div>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex-1 md:w-32 text-center border border-white/10">
             <div className="text-3xl font-black text-rose-300">Rs. {totalFine}</div>
-            <div className="text-xs font-semibold text-blue-100 uppercase tracking-wider mt-1">Total Fine</div>
+            <div className="text-xs font-semibold text-blue-700 uppercase tracking-wider mt-1">Total Fine</div>
           </div>
         </div>
       </div>
@@ -98,75 +97,7 @@ export function StudentHome({ student, books, records, onNavigate, onBookClick }
             </div>
           </div>
 
-          {/* Current Books */}
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-slate-800">Currently Reading</h3>
-              <button onClick={() => onNavigate('My Books')} className="text-blue-600 hover:text-blue-700 text-sm font-bold flex items-center gap-1">View All <ChevronRight className="w-4 h-4" /></button>
-            </div>
-            {currentBorrowed.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
-                <BookOpen className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-                <h4 className="text-lg font-bold text-slate-700">No books borrowed</h4>
-                <p className="text-slate-500 text-sm mt-1">Explore our catalog and find your next read.</p>
-                <button onClick={() => onNavigate('Search Books')} className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-medium transition-colors">Browse Books</button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {currentBorrowed.slice(0, 2).map(record => {
-                  const book = books.find(b => b.id === record.bookId);
-                  const isOverdue = new Date(record.expectedReturnDate) < today;
-                  return (
-                    <div key={record.id} className="bg-white rounded-2xl border border-slate-200 p-4 flex gap-4 shadow-sm hover:shadow-md transition-all">
-                      <div className="w-20 h-28 bg-slate-100 rounded-lg overflow-hidden shrink-0 shadow-inner">
-                        {book?.imageUrl ? (
-                          <img src={book.imageUrl} alt={record.bookName} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-200 font-bold text-xl">{record.bookName.charAt(0)}</div>
-                        )}
-                      </div>
-                      <div className="flex flex-col flex-1 min-w-0">
-                        <h4 className="font-bold text-slate-900 truncate" title={record.bookName}>{record.bookName}</h4>
-                        <p className="text-xs text-slate-500 mb-2 truncate">{book?.author || 'Unknown Author'}</p>
-                        <div className="mt-auto space-y-1">
-                           <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Due Date</div>
-                           <div className={`text-sm font-bold flex items-center gap-1 ${isOverdue ? 'text-rose-600' : 'text-slate-800'}`}>
-                             <Clock className="w-3.5 h-3.5" />
-                             {record.expectedReturnDate}
-                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
-          
-          {/* Recommendations */}
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-slate-800">Recommended for You</h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {recommendations.map(book => (
-                <div key={book.id} onClick={() => onBookClick(book)} className="bg-white rounded-xl border border-slate-200 p-3 shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                  <div className="h-40 w-full bg-slate-100 rounded-lg overflow-hidden mb-3">
-                    {book.imageUrl ? (
-                      <img src={book.imageUrl} alt={book.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-50 font-bold text-2xl">{book.name.split(' ').slice(0, 2).map(w => w.charAt(0)).join('')}</div>
-                    )}
-                  </div>
-                  <h4 className="font-bold text-slate-900 text-sm leading-tight line-clamp-2" title={book.name}>{book.name}</h4>
-                  <p className="text-xs text-slate-500 mt-1 truncate">{book.author}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
-
         {/* Right Col: Sidebar */}
         <div className="space-y-6">
           
@@ -203,6 +134,34 @@ export function StudentHome({ student, books, records, onNavigate, onBookClick }
             </div>
           </div>
 
+          {/* Reading Stats Widget */}
+          <div className="bg-indigo-50 border border-blue-100 rounded-2xl p-6 text-blue-900 shadow-lg relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-4 opacity-10">
+               <TrendingUp className="w-24 h-24" />
+             </div>
+             <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2 relative z-10"><Activity className="w-5 h-5"/> Reading Stats</h3>
+             
+             <div className="space-y-4 relative z-10">
+               <div>
+                 <div className="flex justify-between text-sm mb-1">
+                   <span className="text-slate-600">Total Borrowed</span>
+                   <span className="font-bold">{records.length}</span>
+                 </div>
+                 <div className="h-1.5 w-full bg-blue-200 rounded-full overflow-hidden">
+                   <div className="h-full bg-indigo-500 rounded-full" style={{ width: '100%' }}></div>
+                 </div>
+               </div>
+               <div>
+                 <div className="flex justify-between text-sm mb-1">
+                   <span className="text-slate-600">Returned on Time</span>
+                   <span className="font-bold">{records.filter(r => r.status === 'Returned' && (r.lateDays || 0) === 0).length}</span>
+                 </div>
+                 <div className="h-1.5 w-full bg-blue-200 rounded-full overflow-hidden">
+                   <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(records.filter(r => r.status === 'Returned' && (r.lateDays || 0) === 0).length / (records.length || 1)) * 100}%` }}></div>
+                 </div>
+               </div>
+             </div>
+          </div>
 
         </div>
       </div>

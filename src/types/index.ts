@@ -55,7 +55,7 @@ export interface Student {
   dateOfBirth?: string;
   admissionDate?: string;
   membershipNumber?: string;
-  accountStatus?: 'Active' | 'Inactive' | 'Suspended' | 'Graduated' | 'Expired Membership';
+  accountStatus?: 'Active' | 'Pending' | 'Pending Approval' | 'Rejected' | 'Inactive' | 'Suspended' | 'Graduated' | 'Expired Membership';
   password?: string; // added for auth
   wishlist?: string[]; // array of book IDs
   photoUrl?: string; // profile photo
@@ -202,6 +202,7 @@ export interface BorrowRequest {
   requestDate: string;
   type: 'Borrow';
   studentNotes?: string;
+  reason?: string;
   status: 'Pending' | 'Under Review' | 'Approved' | 'Rejected' | 'Issued' | 'Cancelled';
   statusHistory?: { status: string; date: string; by: string; remarks?: string }[];
   lastUpdatedDate?: string;
@@ -209,4 +210,12 @@ export interface BorrowRequest {
   staffRemarks?: string;
 }
 
-export * from './notifications';
+export interface Notification {
+  id: string;
+  userId: string;
+  role: 'student' | 'staff';
+  title: string;
+  message: string;
+  date: string;
+  read: boolean;
+}

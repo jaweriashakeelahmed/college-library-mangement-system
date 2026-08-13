@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { BookOpen, Clock, AlertCircle, RefreshCw, Undo2, X } from 'lucide-react';
+import jsPDF from 'jspdf';
+import { BookOpen, Clock, AlertCircle, RefreshCw, Undo2, X, BookMarked } from 'lucide-react';
 import { Book, IssueRecord, Student, ReturnRequest } from '@/src/types';
 
 interface StudentMyBooksProps {
@@ -14,6 +15,35 @@ export function StudentMyBooks({ records, books, student, onReturnRequest }: Stu
   const [requestModal, setRequestModal] = useState<{ isOpen: boolean, record: IssueRecord | null, type: 'Return Before Time' | 'Exchange' }>({ isOpen: false, record: null, type: 'Return Before Time' });
   const [reason, setReason] = useState('');
   const today = new Date();
+
+    const downloadReceipt = (record: IssueRecord) => {
+    const doc = new jsPDF();
+    const book = books.find(b => b.id === record.bookId);
+    
+    doc.setFontSize(20);
+    doc.text('LIBRARY MANAGEMENT SYSTEM', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(16);
+    doc.text('Issue Allotment Letter', 105, 30, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.text(`Issue/Tracking ID: ${record.id}`, 20, 50);
+    doc.text(`Student Name: ${student.name}`, 20, 60);
+    doc.text(`Roll No: ${student.rollNumber}`, 20, 70);
+    doc.text(`Department: ${student.department}`, 20, 80);
+    
+    doc.text(`Book Title: ${record.bookName}`, 20, 100);
+    doc.text(`Author: ${book?.author || 'N/A'}`, 20, 110);
+    doc.text(`ISBN: ${book?.isbn13 || book?.isbn10 || 'N/A'}`, 20, 120);
+    
+    doc.text(`Issue Date: ${record.issueDate}`, 20, 140);
+    doc.text(`Return Due Date: ${record.expectedReturnDate}`, 20, 150);
+    
+    doc.setFontSize(10);
+    doc.text('Please return the book on or before the due date to avoid fines.', 20, 180);
+    
+    doc.save(`Receipt_${record.id}.pdf`);
+  };
 
   const handleRequestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,12 +90,8 @@ export function StudentMyBooks({ records, books, student, onReturnRequest }: Stu
                      <div className="absolute top-0 right-0 left-0 h-1 bg-rose-500"></div>
                   )}
                   <div className="flex gap-4">
-                    <div className="w-24 h-36 bg-slate-100 rounded-lg overflow-hidden shrink-0 shadow-inner">
-                      {book?.imageUrl ? (
-                        <img src={book.imageUrl} alt={record.bookName} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50 font-bold text-3xl">{record.bookName.charAt(0)}</div>
-                      )}
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm bg-blue-100 text-indigo-600">
+                      <BookMarked className="w-6 h-6" />
                     </div>
                     <div className="flex flex-col flex-1 min-w-0">
                       <h3 className="font-bold text-slate-900 text-base leading-tight line-clamp-2 mb-1" title={record.bookName}>{record.bookName}</h3>
@@ -94,7 +120,7 @@ export function StudentMyBooks({ records, books, student, onReturnRequest }: Stu
                   </div>
 
                   <div className="mt-4 flex gap-2">
-                    <button onClick={() => setRequestModal({ isOpen: true, record, type: 'Return Before Time' })} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-sm font-semibold transition-colors">
+                    <button onClick={() => setRequestModal({ isOpen: true, record, type: 'Return Before Time' })} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-blue-100 text-blue-700 rounded-lg text-sm font-semibold transition-colors">
                       <Undo2 className="w-4 h-4" /> Return
                     </button>
                     <button onClick={() => setRequestModal({ isOpen: true, record, type: 'Exchange' })} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold transition-colors border border-slate-200">
@@ -102,6 +128,9 @@ export function StudentMyBooks({ records, books, student, onReturnRequest }: Stu
                     </button>
                     <button onClick={() => setRequestModal({ isOpen: true, record, type: 'Renewal' })} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold transition-colors border border-slate-200">
                       <RefreshCw className="w-4 h-4" /> Renew
+                    </button>
+                    <button onClick={() => downloadReceipt(record)} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold transition-colors border border-slate-200">
+                      Receipt
                     </button>
                   </div>
                 </div>
@@ -126,12 +155,8 @@ export function StudentMyBooks({ records, books, student, onReturnRequest }: Stu
             
             <div className="p-6 space-y-4">
               <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg flex items-center gap-3">
-                 <div className="w-10 h-14 bg-slate-200 rounded overflow-hidden shrink-0">
-                    {books.find(b => b.id === requestModal.record?.bookId)?.imageUrl ? (
-                      <img src={books.find(b => b.id === requestModal.record?.bookId)?.imageUrl} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">{requestModal.record.bookName.charAt(0)}</div>
-                    )}
+                 <div className="w-10 h-14 bg-slate-100 rounded flex items-center justify-center shrink-0">
+                    <BookMarked className="w-5 h-5 text-slate-400" />
                  </div>
                  <div>
                    <div className="font-bold text-slate-800 text-sm line-clamp-1">{requestModal.record.bookName}</div>
@@ -146,13 +171,13 @@ export function StudentMyBooks({ records, books, student, onReturnRequest }: Stu
                   onChange={e => setReason(e.target.value)} 
                   required 
                   rows={3} 
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   placeholder={requestModal.type === 'Exchange' ? "e.g. Completed early, want to exchange for another book." : "e.g. Finished reading."}
                 ></textarea>
               </div>
 
               {requestModal.type === 'Exchange' && (
-                <div className="p-3 bg-blue-50 rounded-lg flex gap-3 text-blue-800 text-sm">
+                <div className="p-3 bg-indigo-50 rounded-lg flex gap-3 text-blue-800 text-sm">
                   <AlertCircle className="w-5 h-5 shrink-0" />
                   <p>Exchange requests are subject to approval. You will be notified once approved to visit the library to exchange the book.</p>
                 </div>
@@ -161,7 +186,7 @@ export function StudentMyBooks({ records, books, student, onReturnRequest }: Stu
 
             <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50">
               <button type="button" onClick={() => setRequestModal({ isOpen: false, record: null, type: 'Return Before Time' })} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg font-medium transition-colors">Cancel</button>
-              <button type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm">Submit Request</button>
+              <button type="submit" className="px-6 py-2 bg-indigo-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm">Submit Request</button>
             </div>
           </form>
         </div>

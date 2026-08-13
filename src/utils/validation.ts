@@ -34,8 +34,7 @@ export const validatePhone = (phone: string) => {
 
 export const validateRollNumber = (rollNo: string) => {
   const trimmed = rollNo.trim().toUpperCase();
-  // Assuming format like 2k24/CS/12 or similar (2k followed by year / dept / number)
-  // Let's use a general pattern based on mock data: e.g. 2k24/CS/12, 2k25/IT/10
-  const isValid = /^2K\d{2}\/[A-Z]+\/\d{2,3}$/.test(trimmed);
+  // Format like 2k24/CS/12, 2k24/DS/9, 2k24/Computer Science/12
+  const isValid = /^2K\d{2}\/[A-Z &]+\/\d+$/.test(trimmed);
   return { rollNo: trimmed, isValid };
 };

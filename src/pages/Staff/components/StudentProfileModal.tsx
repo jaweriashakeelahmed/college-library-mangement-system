@@ -1,6 +1,5 @@
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import React, { useRef, useState } from 'react';
-import { X, Save, Edit3, Image as ImageIcon, Printer, Download, CreditCard, Camera, Loader2, BookOpen, Clock, AlertCircle } from 'lucide-react';
+import { X, Save, Edit3, Image as ImageIcon, Printer, Download, CreditCard, User, Loader2, BookOpen, Clock, AlertCircle } from 'lucide-react';
 import { Student, IssueRecord } from '@/src/types';
 import { LibraryCard, LibraryCardBack } from './LibraryCard';
 import { useReactToPrint } from 'react-to-print';
@@ -47,26 +46,25 @@ export function StudentProfileModal({ student, isOpen, onClose, onSave, isStaff,
     setIsEditing(false);
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isStaff) return;
     const file = e.target.files?.[0];
     if (!file) return;
+
     if (file.size > 2 * 1024 * 1024) {
       alert("File is too large. Maximum size is 2MB.");
       return;
     }
+
     setIsUploadingPhoto(true);
-    try {
-      const storage = getStorage();
-      const storageRef = ref(storage, `profile_photos/${student.id}_${Date.now()}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      setFormData({ ...formData, photoUrl: url });
-    } catch(err) {
-      alert("Failed to upload photo");
-    } finally {
-      setIsUploadingPhoto(false);
-    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setTimeout(() => {
+        setFormData({ ...formData, photoUrl: event.target?.result as string });
+        setIsUploadingPhoto(false);
+      }, 500);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handlePrintCard = useReactToPrint({
@@ -156,7 +154,7 @@ export function StudentProfileModal({ student, isOpen, onClose, onSave, isStaff,
                     {formData.photoUrl ? (
                       <img src={formData.photoUrl} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <Camera className="w-10 h-10 text-slate-300" />
+                      <User className="w-10 h-10 text-slate-300" />
                     )}
                     
                     {isEditing && (
@@ -275,18 +273,6 @@ export function StudentProfileModal({ student, isOpen, onClose, onSave, isStaff,
                   {/* Library & Contact */}
                   <div className="col-span-2 pb-2 border-b border-slate-100 mt-4 mb-2"><h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Library & Contact</h3></div>
 
-                  <div className="col-span-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Library Membership Number</label>
-                    {isEditing ? (
-                      <div className="flex gap-2 mt-1">
-                        <input name="membershipNumber" value={formData.membershipNumber || ''} readOnly className="flex-1 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded text-sm text-slate-500 cursor-not-allowed font-mono" />
-                        <button type="button" onClick={generateMembershipNumber} className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-sm font-medium transition-colors shrink-0">
-                          Generate Unique No.
-                        </button>
-                      </div>
-                    ) : <div className="mt-1 text-sm font-bold text-blue-700 font-mono">{formData.membershipNumber || 'Not Generated'}</div>}
-                  </div>
-
                   <div>
                     <label className="text-xs font-bold text-slate-500 uppercase">Phone Number</label>
                     {isEditing ? (
@@ -312,6 +298,8 @@ export function StudentProfileModal({ student, isOpen, onClose, onSave, isStaff,
                        <label className="text-xs font-bold text-slate-500 uppercase">Account Status</label>
                        <select name="accountStatus" value={formData.accountStatus || 'Active'} onChange={handleChange} className="w-full px-3 py-1.5 mt-1 bg-slate-50 border border-slate-200 rounded text-sm focus:ring-1 focus:ring-blue-500">
                           <option value="Active">Active</option>
+                          <option value="Pending">Pending Approval</option>
+                          <option value="Rejected">Rejected</option>
                           <option value="Inactive">Inactive</option>
                           <option value="Suspended">Suspended</option>
                           <option value="Graduated">Graduated</option>

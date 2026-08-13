@@ -60,16 +60,33 @@ export function Requests({ returnRequests, borrowRequests = [], onUpdateBorrowRe
     if (!showConfirmModal) return;
     const { type, request } = showConfirmModal;
     
+    const isBorrowReq = request.type === 'Borrow' as any;
     if (type === 'Approve') {
-      onApprove(request.id, true);
+      if (isBorrowReq && onUpdateBorrowRequest) {
+        onUpdateBorrowRequest(request.id, 'Approved', actionReason);
+      } else {
+        onApprove(request.id, true);
+        if (actionReason) onUpdateStatus(request.id, 'Approved', actionReason);
+      }
     } else if (type === 'Reject') {
-      onApprove(request.id, false);
-      // We could pass actionReason if onApprove supported it, but we can also use onUpdateStatus
-      if (actionReason) onUpdateStatus(request.id, 'Rejected', actionReason);
+      if (isBorrowReq && onUpdateBorrowRequest) {
+        onUpdateBorrowRequest(request.id, 'Rejected', actionReason);
+      } else {
+        onApprove(request.id, false);
+        if (actionReason) onUpdateStatus(request.id, 'Rejected', actionReason);
+      }
     } else if (type === 'MoreInfo') {
-      onUpdateStatus(request.id, 'Under Review', actionReason);
+      if (isBorrowReq && onUpdateBorrowRequest) {
+        onUpdateBorrowRequest(request.id, 'Under Review', actionReason);
+      } else {
+        onUpdateStatus(request.id, 'Under Review', actionReason);
+      }
     } else if (type === 'Complete') {
-      onUpdateStatus(request.id, 'Completed');
+      if (isBorrowReq && onUpdateBorrowRequest) {
+        onUpdateBorrowRequest(request.id, 'Issued', actionReason);
+      } else {
+        onUpdateStatus(request.id, 'Completed', actionReason);
+      }
     }
     
     setShowConfirmModal(null);

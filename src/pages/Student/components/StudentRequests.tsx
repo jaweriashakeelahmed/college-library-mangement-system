@@ -12,9 +12,15 @@ interface StudentRequestsProps {
 export function StudentRequests({  requests, borrowRequests, books, allRequests = []  }: StudentRequestsProps) {
   const [filter, setFilter] = useState('All');
 
-  const filteredRequests = requests
+  
+  const allCombinedRequests = [
+    ...requests,
+    ...(borrowRequests || [])
+  ];
+  const filteredRequests = allCombinedRequests
     .filter(r => filter === 'All' || r.status === filter)
     .sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
+
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -39,7 +45,7 @@ export function StudentRequests({  requests, borrowRequests, books, allRequests 
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">My Requests</h2>
-          <p className="text-slate-500 mt-1">Track the status of your return and exchange requests.</p>
+          <p className="text-slate-500 mt-1">Track the status of your borrow, return and exchange requests.</p>
         </div>
         <div className="flex bg-slate-100 p-1 rounded-xl">
           {['All', 'Pending', 'Approved', 'Rejected'].map(status => (
@@ -48,7 +54,7 @@ export function StudentRequests({  requests, borrowRequests, books, allRequests 
               onClick={() => setFilter(status)}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                 filter === status 
-                  ? 'bg-white text-blue-600 shadow-sm' 
+                  ? 'bg-white text-indigo-600 shadow-sm' 
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -73,12 +79,8 @@ export function StudentRequests({  requests, borrowRequests, books, allRequests 
                 <div key={request.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row gap-5 items-start">
                   
                   {/* Book Image */}
-                  <div className="w-16 h-24 bg-slate-100 rounded-lg overflow-hidden shrink-0 shadow-inner hidden sm:block">
-                    {book?.imageUrl ? (
-                      <img src={book.imageUrl} alt={request.bookName} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50 font-bold text-2xl">{request.bookName.charAt(0)}</div>
-                    )}
+                  <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm hidden sm:flex">
+                    <Activity className="w-6 h-6" />
                   </div>
 
                   {/* Details */}
@@ -86,7 +88,7 @@ export function StudentRequests({  requests, borrowRequests, books, allRequests 
                     <div className="flex justify-between items-start mb-2">
                       <div>
                          <div className="flex items-center gap-2 mb-1">
-                           <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded">{request.type} Request</span>
+                           <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2 py-0.5 rounded">{request.type} Request</span>
                            <span className="text-xs text-slate-400 font-medium">{request.requestDate}</span>
                          </div>
                          <h3 className="font-bold text-slate-900 text-base leading-tight truncate" title={request.bookName}>{request.bookName}</h3>
@@ -98,7 +100,7 @@ export function StudentRequests({  requests, borrowRequests, books, allRequests 
                     </div>
 
                     <div className="bg-slate-50 p-3 rounded-xl mt-3 text-sm text-slate-600 border border-slate-100">
-                      <span className="font-semibold text-slate-700">Reason:</span> {request.reason}
+                      <span className="font-semibold text-slate-700">Reason/Remarks:</span> {request.reason || (request as any).staffRemarks || "N/A"}
                     </div>
 
                     {request.status === 'Approved' && request.type === 'Exchange' && (
